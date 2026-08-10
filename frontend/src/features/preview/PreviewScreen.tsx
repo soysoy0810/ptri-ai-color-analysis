@@ -2,11 +2,12 @@ import { motion } from 'framer-motion';
 import { ImageIcon, Sparkles } from 'lucide-react';
 import { CATEGORIES, DESIGNS, FABRICS } from '../../data/catalog';
 import { garmentForDesign } from '../../data/garments';
-import type { PaletteColor } from '../../shared/lib/types';
+import type { FaceRegion, PaletteColor } from '../../shared/lib/types';
 import { LookComposer } from '../../shared/ui/LookComposer';
 
 interface PreviewScreenProps {
   captureDataUrl: string | null;
+  faceBox: FaceRegion | null;
   categoryId: string | null;
   designId: string | null;
   backgroundId: string;
@@ -18,6 +19,7 @@ interface PreviewScreenProps {
 
 export function PreviewScreen({
   captureDataUrl,
+  faceBox,
   categoryId,
   designId,
   backgroundId,
@@ -39,6 +41,7 @@ export function PreviewScreen({
       <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}>
         <LookComposer
           captureDataUrl={captureDataUrl}
+          faceBox={faceBox}
           garmentKey={garmentKey}
           fabricHex={garmentColor}
           backgroundId={backgroundId}

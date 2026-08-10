@@ -5,7 +5,9 @@ import { NavButtons } from '../shared/ui/NavButtons';
 import { useKioskSession } from '../shared/hooks/useKioskSession';
 import { api } from '../shared/api/client';
 import { averageImageColor, rankPaletteFromSample } from '../shared/lib/colorEngine';
-import type { LightingInfo, PaletteColor, SelectionMode } from '../shared/lib/types';
+import { DESIGNS, FABRICS } from '../data/catalog';
+import { garmentForDesign } from '../data/garments';
+import type { FaceRegion, LightingInfo, PaletteColor, SelectionMode } from '../shared/lib/types';
 import { WelcomeScreen } from '../features/welcome/WelcomeScreen';
 import { AutoScanScreen } from '../features/camera/AutoScanScreen';
 import { AnalysisScreen } from '../features/analysis/AnalysisScreen';
@@ -62,9 +64,14 @@ export default function App() {
     goTo('cameraGuide');
   }
 
-  function handleCapture(dataUrl: string, canvas: HTMLCanvasElement, lighting: LightingInfo) {
+  function handleCapture(
+    dataUrl: string,
+    canvas: HTMLCanvasElement,
+    lighting: LightingInfo,
+    faceBox: FaceRegion | null,
+  ) {
     dispatch({ type: 'SET_LIGHTING', lighting });
-    dispatch({ type: 'SET_CAPTURE', dataUrl });
+    dispatch({ type: 'SET_CAPTURE', dataUrl, faceBox });
     const sample = averageImageColor(canvas);
     const ranked = rankPaletteFromSample(sample);
     dispatch({ type: 'SET_TOP20', top20: ranked });
@@ -250,6 +257,7 @@ export default function App() {
       body = (
         <PreviewScreen
           captureDataUrl={state.captureDataUrl}
+          faceBox={state.faceBox}
           categoryId={state.categoryId}
           designId={state.designId}
           backgroundId={state.backgroundId}
@@ -265,11 +273,21 @@ export default function App() {
       body = <RecommendationScreen summary={summary} />;
       footer = <NavButtons onBack={back} onNext={finalizeSession} nextLabel="GET YOUR RESULT" />;
       break;
-    case 'results':
+    case 'results': {
+      const resultFabric = FABRICS.find((f) => f.id === state.fabricId);
+      const resultDesign =
+        (state.categoryId && DESIGNS[state.categoryId]?.find((d) => d.id === state.designId)) ||
+        undefined;
       body = (
         <ResultsScreen
           email={state.profile.email}
           resultToken={state.resultToken}
+          captureDataUrl={state.captureDataUrl}
+          faceBox={state.faceBox}
+          garmentKey={garmentForDesign(state.designId)}
+          fabricHex={resultFabric?.hex || state.selectedColors[0]?.hex || '#1E4D8C'}
+          backgroundId={state.backgroundId}
+          designName={resultDesign?.name}
           onEmailChange={(email) => dispatch({ type: 'SET_PROFILE', profile: { email } })}
           onSendEmail={async () => {
             if (!state.sessionId) throw new Error('Session unavailable offline.');
@@ -286,6 +304,7 @@ export default function App() {
         </button>
       );
       break;
+    }
     case 'thanks':
       body = <ThanksScreen name={state.profile.fullName} onReset={reset} />;
       break;

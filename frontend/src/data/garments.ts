@@ -19,6 +19,16 @@ export const GARMENT_SRC: Record<GarmentKey, string> = {
   barong: `${BASE}/garment-barong.png`,
 };
 
+/** Light neutral versions used for fabric-color tinting in the try-on */
+export const GARMENT_BASE_SRC: Record<GarmentKey, string> = {
+  polo: `${BASE}/garment-polo-base.png`,
+  'collar-blouse': `${BASE}/garment-collar-blouse-base.png`,
+  'linen-shirt': `${BASE}/garment-linen-shirt-base.png`,
+  'formal-shirt': `${BASE}/garment-formal-shirt-base.png`,
+  'active-tee': `${BASE}/garment-active-tee-base.png`,
+  barong: `${BASE}/garment-barong-base.png`,
+};
+
 /** Map each catalog design id → garment photo */
 export const DESIGN_GARMENT: Record<string, GarmentKey> = {
   // Uniform
@@ -66,4 +76,15 @@ export const BACKGROUND_SCENES: Record<string, { from: string; via: string; to: 
   outdoor: { from: '#d7e8d2', via: '#a8c9a0', to: '#6f9a6a', label: 'Outdoor' },
   lab: { from: '#e8eef5', via: '#cfd8e4', to: '#a8b6c8', label: 'Laboratory' },
   travel: { from: '#f5ebe0', via: '#e0c9a8', to: '#c4a574', label: 'Travel' },
+};
+
+/** Real photo backdrops for preview environments */
+const BG_BASE = `${import.meta.env.BASE_URL}backgrounds`;
+export const BACKGROUND_SRC: Record<string, string> = {
+  studio: `${BG_BASE}/bg-studio.png`,
+  office: `${BG_BASE}/bg-office.png`,
+  living: `${BG_BASE}/bg-living.png`,
+  outdoor: `${BG_BASE}/bg-outdoor.png`,
+  lab: `${BG_BASE}/bg-lab.png`,
+  travel: `${BG_BASE}/bg-travel.png`,
 };

@@ -49,6 +49,7 @@ const initialState: SessionState = {
     email: '',
   },
   captureDataUrl: null,
+  faceBox: null,
   lighting: null,
   top20: [],
   selectionMode: 'top5',
@@ -71,7 +72,7 @@ function reducer(state: SessionState, action: SessionAction): SessionState {
     case 'SET_SESSION':
       return { ...state, sessionId: action.sessionId };
     case 'SET_CAPTURE':
-      return { ...state, captureDataUrl: action.dataUrl };
+      return { ...state, captureDataUrl: action.dataUrl, faceBox: action.faceBox };
     case 'SET_LIGHTING':
       return { ...state, lighting: action.lighting };
     case 'SET_TOP20':

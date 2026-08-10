@@ -2,10 +2,19 @@ import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
 import { CheckCircle2, QrCode, Send } from 'lucide-react';
+import type { GarmentKey } from '../../data/garments';
+import type { FaceRegion } from '../../shared/lib/types';
+import { LookComposer } from '../../shared/ui/LookComposer';
 
 interface ResultsScreenProps {
   email: string;
   resultToken: string | null;
+  captureDataUrl: string | null;
+  faceBox: FaceRegion | null;
+  garmentKey: GarmentKey;
+  fabricHex: string;
+  backgroundId: string;
+  designName?: string;
   onEmailChange: (email: string) => void;
   onSendEmail: () => Promise<void>;
   onSkip: () => void;
@@ -14,6 +23,12 @@ interface ResultsScreenProps {
 export function ResultsScreen({
   email,
   resultToken,
+  captureDataUrl,
+  faceBox,
+  garmentKey,
+  fabricHex,
+  backgroundId,
+  designName,
   onEmailChange,
   onSendEmail,
   onSkip,
@@ -44,6 +59,23 @@ export function ResultsScreen({
     <section className="screen">
       <h1 className="screen-title">Get Your Result</h1>
       <p className="screen-sub">Send your result to your email or scan the QR code.</p>
+
+      {/* Your final look — face + garment + chosen background */}
+      <motion.div
+        className="mb-4"
+        initial={{ opacity: 0, scale: 0.97 }}
+        animate={{ opacity: 1, scale: 1 }}
+      >
+        <LookComposer
+          captureDataUrl={captureDataUrl}
+          faceBox={faceBox}
+          garmentKey={garmentKey}
+          fabricHex={fabricHex}
+          backgroundId={backgroundId}
+          designName={designName}
+          className="min-h-[340px]"
+        />
+      </motion.div>
 
       {/* Send via Email */}
       <motion.div

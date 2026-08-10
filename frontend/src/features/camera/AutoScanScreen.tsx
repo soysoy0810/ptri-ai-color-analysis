@@ -4,10 +4,15 @@ import { Glasses, Loader2, ScanFace, SunMedium, UserRound, Zap } from 'lucide-re
 import { useCamera } from '../../shared/hooks/useCamera';
 import { useFaceDetection } from '../../shared/hooks/useFaceDetection';
 import { assessLighting } from '../../shared/lib/colorEngine';
-import type { LightingInfo } from '../../shared/lib/types';
+import type { FaceRegion, LightingInfo } from '../../shared/lib/types';
 
 interface AutoScanScreenProps {
-  onCapture: (dataUrl: string, canvas: HTMLCanvasElement, lighting: LightingInfo) => void;
+  onCapture: (
+    dataUrl: string,
+    canvas: HTMLCanvasElement,
+    lighting: LightingInfo,
+    faceBox: FaceRegion | null,
+  ) => void;
 }
 
 const TIPS = [
@@ -38,12 +43,13 @@ export function AutoScanScreen({ onCapture }: AutoScanScreenProps) {
     if (isStable && !capturedRef.current) {
       capturedRef.current = true;
       setStatus('analyzing');
+      const faceBox = face;
       // scheduled once; not cleared on re-render so the capture always fires
       window.setTimeout(() => {
         const frame = captureFrame();
         if (frame) {
           const lighting = assessLighting(frame.canvas);
-          onCapture(frame.dataUrl, frame.canvas, lighting);
+          onCapture(frame.dataUrl, frame.canvas, lighting, faceBox);
         } else {
           capturedRef.current = false;
         }

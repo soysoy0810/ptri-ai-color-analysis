@@ -70,11 +70,20 @@ export interface LightingInfo {
   status: LightingStatus;
 }
 
+/** Normalized (0..1) face bounding box within the captured frame */
+export interface FaceRegion {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export interface SessionState {
   step: StepId;
   sessionId: string | null;
   profile: Profile;
   captureDataUrl: string | null;
+  faceBox: FaceRegion | null;
   lighting: LightingInfo | null;
   top20: PaletteColor[];
   selectionMode: SelectionMode;
@@ -101,7 +110,7 @@ export type SessionAction =
   | { type: 'SET_STEP'; step: StepId }
   | { type: 'SET_PROFILE'; profile: Partial<Profile> }
   | { type: 'SET_SESSION'; sessionId: string }
-  | { type: 'SET_CAPTURE'; dataUrl: string }
+  | { type: 'SET_CAPTURE'; dataUrl: string; faceBox: FaceRegion | null }
   | { type: 'SET_LIGHTING'; lighting: LightingInfo }
   | { type: 'SET_TOP20'; top20: PaletteColor[] }
   | { type: 'SET_SELECTION_MODE'; mode: SelectionMode }

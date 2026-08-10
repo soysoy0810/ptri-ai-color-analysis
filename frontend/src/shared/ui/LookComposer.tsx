@@ -1,7 +1,10 @@
-import { BACKGROUND_SCENES, GARMENT_SRC, type GarmentKey } from '../../data/garments';
+import { useEffect, useState } from 'react';
+import { BACKGROUND_SCENES, BACKGROUND_SRC, GARMENT_BASE_SRC, type GarmentKey } from '../../data/garments';
+import type { FaceRegion } from '../lib/types';
 
 interface LookComposerProps {
   captureDataUrl: string | null;
+  faceBox?: FaceRegion | null;
   garmentKey: GarmentKey;
   fabricHex: string;
   backgroundId: string;
@@ -10,10 +13,73 @@ interface LookComposerProps {
 }
 
 /**
- * Try-on composer: scene + photoreal garment (recolored) + user face.
+ * Crop the visitor's head out of the captured frame using the detected face
+ * box, with a feathered oval alpha so it blends onto the garment collar.
+ */
+function useHeadCrop(captureDataUrl: string | null, faceBox: FaceRegion | null | undefined) {
+  const [headUrl, setHeadUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!captureDataUrl) {
+      setHeadUrl(null);
+      return;
+    }
+    let cancelled = false;
+    const img = new Image();
+    img.onload = () => {
+      if (cancelled) return;
+      // Fall back to a centered guess when no face box was stored
+      const fb = faceBox ?? { x: 0.32, y: 0.12, width: 0.36, height: 0.42 };
+      const cx = (fb.x + fb.width / 2) * img.width;
+      const cy = (fb.y + fb.height / 2) * img.height;
+      // Expand to include hair and chin
+      const w = fb.width * img.width * 1.45;
+      const h = fb.height * img.height * 1.7;
+      const sx = Math.max(0, cx - w / 2);
+      const sy = Math.max(0, cy - h * 0.52);
+      const sw = Math.min(w, img.width - sx);
+      const sh = Math.min(h, img.height - sy);
+
+      const size = 420;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = Math.round((size * sh) / sw);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+
+      // Feathered oval alpha so the crop melts into the scene
+      // Tight feathered ellipse so no background survives around the head
+      ctx.globalCompositeOperation = 'destination-in';
+      ctx.save();
+      ctx.translate(canvas.width / 2, canvas.height * 0.47);
+      ctx.scale(1, canvas.height / canvas.width);
+      const mask = ctx.createRadialGradient(0, 0, canvas.width * 0.2, 0, 0, canvas.width * 0.38);
+      mask.addColorStop(0, 'rgba(0,0,0,1)');
+      mask.addColorStop(0.55, 'rgba(0,0,0,1)');
+      mask.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = mask;
+      ctx.fillRect(-canvas.width, (-canvas.height * canvas.width) / canvas.height, canvas.width * 2, (canvas.height * canvas.width) / canvas.height * 2);
+      ctx.restore();
+
+      setHeadUrl(canvas.toDataURL('image/png'));
+    };
+    img.src = captureDataUrl;
+    return () => {
+      cancelled = true;
+    };
+  }, [captureDataUrl, faceBox]);
+
+  return headUrl;
+}
+
+/**
+ * Try-on composer: real photo scene + cutout garment recolored to the
+ * selected fabric + the visitor's own head sitting on the collar.
  */
 export function LookComposer({
   captureDataUrl,
+  faceBox,
   garmentKey,
   fabricHex,
   backgroundId,
@@ -21,66 +87,74 @@ export function LookComposer({
   className = '',
 }: LookComposerProps) {
   const scene = BACKGROUND_SCENES[backgroundId] || BACKGROUND_SCENES.studio;
-  const garmentSrc = GARMENT_SRC[garmentKey];
+  const sceneSrc = BACKGROUND_SRC[backgroundId] || BACKGROUND_SRC.studio;
+  const garmentSrc = GARMENT_BASE_SRC[garmentKey];
+  const headUrl = useHeadCrop(captureDataUrl, faceBox);
+
+  const garmentMask: React.CSSProperties = {
+    WebkitMaskImage: `url(${garmentSrc})`,
+    maskImage: `url(${garmentSrc})`,
+    WebkitMaskSize: 'contain',
+    maskSize: 'contain',
+    WebkitMaskRepeat: 'no-repeat',
+    maskRepeat: 'no-repeat',
+    WebkitMaskPosition: 'center bottom',
+    maskPosition: 'center bottom',
+  };
 
   return (
-    <div className={`relative min-h-[360px] overflow-hidden rounded-3xl shadow-kiosk ${className}`}>
-      {/* Environment */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background: `linear-gradient(165deg, ${scene.from} 0%, ${scene.via} 48%, ${scene.to} 100%)`,
-        }}
+    <div className={`relative min-h-[420px] overflow-hidden rounded-3xl shadow-kiosk ${className}`}>
+      {/* Real photo environment */}
+      <img
+        src={sceneSrc}
+        alt={scene.label}
+        className="absolute inset-0 h-full w-full object-cover"
+        draggable={false}
       />
-      {/* Soft depth / bokeh */}
-      <div className="absolute -left-8 top-10 h-40 w-40 rounded-full bg-white/30 blur-3xl" />
-      <div className="absolute -right-10 bottom-16 h-48 w-48 rounded-full bg-navy/10 blur-3xl" />
+      {/* Gentle darkening at the bottom to ground the subject */}
+      <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/25 to-transparent" />
 
-      {/* Garment plate — colorized to selected fabric */}
-      <div className="absolute bottom-[-2%] left-1/2 z-[1] h-[72%] w-[88%] -translate-x-1/2">
-        <div
-          className="absolute inset-0 rounded-[28px]"
-          style={{ background: fabricHex }}
-          aria-hidden
-        />
+      {/* Soft contact shadow behind the person */}
+      <div className="absolute bottom-[-4%] left-1/2 z-[1] h-[70%] w-[80%] -translate-x-1/2 rounded-[45%] bg-black/25 blur-2xl" />
+
+      {/* Garment — real cutout photo, tinted to the selected fabric */}
+      <div className="absolute bottom-[-3%] left-1/2 z-[2] h-[68%] w-[86%] -translate-x-1/2">
         <img
           src={garmentSrc}
           alt={designName || 'Selected garment'}
-          className="relative z-[1] h-full w-full object-contain object-bottom drop-shadow-2xl"
-          style={{
-            filter: 'grayscale(1) contrast(1.08) brightness(1.12)',
-            mixBlendMode: 'multiply',
-          }}
+          className="h-full w-full object-contain object-bottom"
           draggable={false}
         />
-        {/* Keep fabric highlights readable on dark colors */}
+        {/* Fabric color applied only on garment pixels via alpha mask */}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{ ...garmentMask, background: fabricHex, mixBlendMode: 'multiply' }}
+          aria-hidden
+        />
+        {/* Restore highlights so folds stay visible on dark fabrics */}
         <img
           src={garmentSrc}
           alt=""
           aria-hidden
-          className="pointer-events-none absolute inset-0 z-[2] h-full w-full object-contain object-bottom opacity-35"
+          className="pointer-events-none absolute inset-0 h-full w-full object-contain object-bottom opacity-30"
           style={{ mixBlendMode: 'soft-light' }}
           draggable={false}
         />
       </div>
 
-      {/* User face — sits on the collar / neckline */}
-      <div className="absolute left-1/2 top-[4%] z-[3] w-[46%] -translate-x-1/2">
-        <div className="relative mx-auto aspect-square w-full overflow-hidden rounded-full border-[5px] border-white shadow-[0_12px_28px_rgba(11,31,58,0.28)]">
-          {captureDataUrl ? (
-            <img
-              src={captureDataUrl}
-              alt="Your face"
-              className="h-full w-full object-cover"
-              style={{ objectPosition: 'center 20%' }}
-            />
-          ) : (
-            <div className="grid h-full place-items-center bg-slate-200 text-xs font-bold text-muted">
-              Face capture
-            </div>
-          )}
+      {/* Visitor's head — feathered crop sitting on the collar */}
+      {headUrl ? (
+        <img
+          src={headUrl}
+          alt="Your face"
+          className="absolute bottom-[49.5%] left-1/2 z-[3] w-[32%] -translate-x-1/2 drop-shadow-[0_10px_18px_rgba(11,31,58,0.35)]"
+          draggable={false}
+        />
+      ) : (
+        <div className="absolute bottom-[60%] left-1/2 z-[3] grid aspect-square w-[34%] -translate-x-1/2 place-items-center rounded-full bg-slate-200/80 text-xs font-bold text-muted">
+          Face capture
         </div>
-      </div>
+      )}
 
       {/* Labels */}
       <div className="absolute left-3 top-3 z-[4] rounded-full bg-white/90 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-navy shadow-sm">

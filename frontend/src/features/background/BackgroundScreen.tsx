@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
 import { BACKGROUNDS } from '../../data/catalog';
-import { BACKGROUND_SCENES } from '../../data/garments';
+import { BACKGROUND_SRC } from '../../data/garments';
 
 interface BackgroundScreenProps {
   selectedId: string;
@@ -15,7 +15,7 @@ export function BackgroundScreen({ selectedId, onSelect }: BackgroundScreenProps
 
       <div className="grid grid-cols-2 gap-3">
         {BACKGROUNDS.map((bg, i) => {
-          const scene = BACKGROUND_SCENES[bg.id];
+          const photo = BACKGROUND_SRC[bg.id];
           const active = selectedId === bg.id;
           return (
             <motion.button
@@ -40,17 +40,16 @@ export function BackgroundScreen({ selectedId, onSelect }: BackgroundScreenProps
                 </motion.span>
               ) : null}
 
-              {/* scene preview */}
-              <div
-                className="relative h-[88px] w-full"
-                style={{
-                  background: scene
-                    ? `linear-gradient(160deg, ${scene.from} 0%, ${scene.via} 55%, ${scene.to} 100%)`
-                    : bg.tone,
-                }}
-              >
-                {/* simple floor line to suggest depth */}
-                <div className="absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-black/12 to-transparent" />
+              {/* real scene photo preview */}
+              <div className="relative h-[110px] w-full overflow-hidden">
+                <img
+                  src={photo}
+                  alt={bg.label}
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                  draggable={false}
+                />
+                <div className="absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-black/15 to-transparent" />
               </div>
               <div className="px-3 py-2">
                 <strong className="text-sm font-bold text-navy">{bg.label}</strong>

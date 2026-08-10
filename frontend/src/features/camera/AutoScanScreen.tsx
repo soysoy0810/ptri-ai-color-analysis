@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Glasses, ScanFace, SunMedium, UserRound, Zap } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Glasses, Loader2, ScanFace, SunMedium, UserRound, Zap } from 'lucide-react';
 import { useCamera } from '../../shared/hooks/useCamera';
 import { useFaceDetection } from '../../shared/hooks/useFaceDetection';
 import { assessLighting } from '../../shared/lib/colorEngine';
@@ -13,16 +13,16 @@ interface AutoScanScreenProps {
 const TIPS = [
   { icon: UserRound, label: 'Face forward' },
   { icon: SunMedium, label: 'Good lighting' },
-  { icon: Glasses, label: 'Remove glasses & face mask' },
-  { icon: Zap, label: 'Avoid strong backlight' },
+  { icon: Glasses, label: 'No glasses' },
+  { icon: Zap, label: 'No backlight' },
 ] as const;
 
-type ScanStatus = 'searching' | 'locked' | 'capturing';
+type ScanStatus = 'searching' | 'locked' | 'analyzing';
 
 /**
- * Fully automatic scan: the visitor just stands in front of the kiosk.
- * Face detection locks on, lighting is checked from the same frame,
- * and capture + analysis start on their own. No buttons.
+ * Kiosk-style automatic scan: full square camera view. The visitor just
+ * stands in front of the screen — the face is detected, captured and the
+ * app moves straight into AI analysis. No buttons.
  */
 export function AutoScanScreen({ onCapture }: AutoScanScreenProps) {
   const { videoRef, ready, error, captureFrame } = useCamera(true);
@@ -37,8 +37,8 @@ export function AutoScanScreen({ onCapture }: AutoScanScreenProps) {
     }
     if (isStable && !capturedRef.current) {
       capturedRef.current = true;
-      setStatus('capturing');
-      // schedule once; deliberately not cleared on re-render so the capture always fires
+      setStatus('analyzing');
+      // scheduled once; not cleared on re-render so the capture always fires
       window.setTimeout(() => {
         const frame = captureFrame();
         if (frame) {
@@ -47,18 +47,11 @@ export function AutoScanScreen({ onCapture }: AutoScanScreenProps) {
         } else {
           capturedRef.current = false;
         }
-      }, 600);
+      }, 350);
       return;
     }
     if (!capturedRef.current) setStatus('locked');
   }, [face, isStable, captureFrame, onCapture]);
-
-  const statusText =
-    status === 'searching'
-      ? 'Stand in front of the camera…'
-      : status === 'locked'
-        ? 'Face detected — hold still'
-        : 'Capturing — starting AI analysis…';
 
   return (
     <section className="screen">
@@ -67,23 +60,9 @@ export function AutoScanScreen({ onCapture }: AutoScanScreenProps) {
         Your face is detected automatically — no buttons, no positioning needed.
       </p>
 
-      {/* Circular live camera with animated scan ring */}
-      <div className="relative mx-auto mt-1 h-[300px] w-[300px]">
-        {/* rotating dashed detection ring */}
-        <motion.div
-          className="absolute -inset-3 rounded-full border-2 border-dashed border-accent/50"
-          animate={{ rotate: 360 }}
-          transition={{ duration: 14, repeat: Infinity, ease: 'linear' }}
-        />
-        <motion.div
-          className={`absolute -inset-1.5 rounded-full border-[3px] ${
-            status === 'searching' ? 'border-line' : 'border-accent'
-          }`}
-          animate={status !== 'searching' ? { scale: [1, 1.03, 1] } : {}}
-          transition={{ duration: 1.4, repeat: Infinity }}
-        />
-
-        <div className="absolute inset-0 overflow-hidden rounded-full bg-navy-ink shadow-kiosk">
+      {/* Full-width square camera view, like the kiosk screen */}
+      <div className="relative mx-auto w-full max-w-[380px] overflow-hidden rounded-3xl bg-navy-ink shadow-kiosk">
+        <div className="relative aspect-[4/5]">
           {error ? (
             <div className="grid h-full place-items-center px-6 text-center text-sm font-semibold text-white">
               {error}
@@ -92,42 +71,95 @@ export function AutoScanScreen({ onCapture }: AutoScanScreenProps) {
             <video ref={videoRef} playsInline muted className="h-full w-full object-cover" />
           )}
 
-          {/* face lock box */}
-          {face && !error ? (
-            <div
-              className="pointer-events-none absolute rounded-[30%] border-2 border-sky-300 transition-all duration-200"
-              style={{
-                left: `${face.x * 100}%`,
-                top: `${face.y * 100}%`,
-                width: `${face.width * 100}%`,
-                height: `${face.height * 100}%`,
-              }}
-            />
-          ) : null}
-
-          {/* scanning beam */}
           {!error ? (
-            <motion.div
-              className="pointer-events-none absolute inset-x-0 h-14 bg-gradient-to-b from-transparent via-sky-300/35 to-transparent"
-              animate={{ top: ['4%', '82%', '4%'] }}
-              transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
-            />
+            <>
+              {/* corner brackets */}
+              <div className="pointer-events-none absolute inset-[6%]">
+                <span className="absolute left-0 top-0 h-9 w-9 border-l-4 border-t-4 border-white/90" />
+                <span className="absolute right-0 top-0 h-9 w-9 border-r-4 border-t-4 border-white/90" />
+                <span className="absolute bottom-0 left-0 h-9 w-9 border-b-4 border-l-4 border-white/90" />
+                <span className="absolute bottom-0 right-0 h-9 w-9 border-b-4 border-r-4 border-white/90" />
+              </div>
+
+              {/* scanning beam */}
+              <motion.div
+                className="pointer-events-none absolute inset-x-0 h-16 bg-gradient-to-b from-transparent via-sky-300/30 to-transparent"
+                animate={{ top: ['2%', '84%', '2%'] }}
+                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+              />
+
+              {/* face lock box */}
+              {face && status !== 'analyzing' ? (
+                <div
+                  className="pointer-events-none absolute rounded-[26%] border-[3px] border-sky-300 shadow-[0_0_24px_rgba(125,211,252,0.45)] transition-all duration-200"
+                  style={{
+                    left: `${face.x * 100}%`,
+                    top: `${face.y * 100}%`,
+                    width: `${face.width * 100}%`,
+                    height: `${face.height * 100}%`,
+                  }}
+                >
+                  <span className="absolute left-0 top-0 h-5 w-5 border-l-[3px] border-t-[3px] border-white" />
+                  <span className="absolute right-0 top-0 h-5 w-5 border-r-[3px] border-t-[3px] border-white" />
+                  <span className="absolute bottom-0 left-0 h-5 w-5 border-b-[3px] border-l-[3px] border-white" />
+                  <span className="absolute bottom-0 right-0 h-5 w-5 border-b-[3px] border-r-[3px] border-white" />
+                </div>
+              ) : null}
+
+              {/* the instant the face is captured, cover the camera with the analyzing loader */}
+              <AnimatePresence>
+                {status === 'analyzing' ? (
+                  <motion.div
+                    className="absolute inset-0 z-[2] grid place-items-center bg-navy/92 backdrop-blur-sm"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    <div className="flex flex-col items-center gap-4 text-white">
+                      <div className="relative h-24 w-24">
+                        <motion.div
+                          className="absolute inset-0 rounded-full border-4 border-sky-300/25 border-t-sky-300"
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                        />
+                        <div className="absolute inset-4 grid place-items-center rounded-full bg-gradient-to-br from-accent to-navy">
+                          <span className="text-lg font-extrabold">AI</span>
+                        </div>
+                      </div>
+                      <p className="text-sm font-bold">Face captured — analyzing…</p>
+                    </div>
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
+
+              {/* status bar inside the camera view */}
+              <div className="absolute inset-x-3 bottom-3 rounded-2xl bg-navy/85 px-4 py-3 text-white backdrop-blur">
+                <div className="flex items-center justify-center gap-2 text-sm font-bold">
+                  {status === 'searching' ? (
+                    <>
+                      <ScanFace className="h-4 w-4 animate-pulse" />
+                      Stand in front of the camera…
+                    </>
+                  ) : status === 'locked' ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin text-sky-300" />
+                      Face detected — hold still
+                    </>
+                  ) : (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin text-emerald-300" />
+                      Analyzing your colors…
+                    </>
+                  )}
+                </div>
+              </div>
+            </>
           ) : null}
         </div>
       </div>
 
-      {/* Live status chip */}
-      <motion.div
-        className="mx-auto mt-5 flex items-center gap-2 rounded-full bg-navy px-5 py-2.5 text-sm font-bold text-white shadow-kiosk"
-        animate={{ opacity: [0.85, 1, 0.85] }}
-        transition={{ duration: 1.6, repeat: Infinity }}
-      >
-        <ScanFace className={`h-4 w-4 ${status === 'searching' ? 'animate-pulse' : 'text-sky-300'}`} />
-        {statusText}
-      </motion.div>
-
       {/* Tips row */}
-      <div className="mt-7 grid grid-cols-4 gap-2">
+      <div className="mt-6 grid grid-cols-4 gap-2">
         {TIPS.map((tip, i) => (
           <motion.div
             key={tip.label}

@@ -10,6 +10,7 @@ import {
   setActivePalette,
   type SkinProfile,
 } from '../shared/lib/colorEngine';
+import { DESIGNS, FABRICS } from '../data/catalog';
 import type { FaceRegion, LightingInfo, PaletteColor, SelectionMode, StepId } from '../shared/lib/types';
 import { WelcomeScreen } from '../features/welcome/WelcomeScreen';
 import { ProfileScreen } from '../features/profile/ProfileScreen';
@@ -52,9 +53,14 @@ export default function App() {
     if (state.step === 'welcome') setSkinProfile(null);
   }, [state.step]);
 
-  // QA / board review: ?preview=results or ?preview=thanks
+  // QA / board review: ?preview=results or ?preview=thanks (&name=Irene for thanks)
   useEffect(() => {
-    const preview = new URLSearchParams(window.location.search).get('preview') as StepId | null;
+    const params = new URLSearchParams(window.location.search);
+    const preview = params.get('preview') as StepId | null;
+    const previewName = params.get('name');
+    if (previewName) {
+      dispatch({ type: 'SET_PROFILE', profile: { fullName: previewName } });
+    }
     if (preview && STEPS.includes(preview)) goTo(preview);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot deep link on load
   }, []);
@@ -308,8 +314,7 @@ export default function App() {
           backgroundId={state.backgroundId}
           fabricId={state.fabricId}
           selectedColors={state.selectedColors}
-          onChangeBackground={() => goTo('background')}
-          onViewDetails={() => goTo('recommendation')}
+          onBackgroundSelect={(backgroundId) => dispatch({ type: 'SET_BACKGROUND', backgroundId })}
         />
       );
       footer = <NavButtons onBack={back} onNext={next} nextLabel="NEXT" />;
@@ -323,6 +328,23 @@ export default function App() {
         <ResultsScreen
           email={state.profile.email}
           resultToken={state.resultToken}
+          captureDataUrl={state.captureDataUrl}
+          faceBox={state.faceBox}
+          gender={state.profile.gender}
+          designId={state.designId}
+          backgroundId={state.backgroundId}
+          fabricId={state.fabricId}
+          selectedColors={state.selectedColors}
+          fabricHex={
+            FABRICS.find((f) => f.id === state.fabricId)?.hex ||
+            state.selectedColors[0]?.hex ||
+            '#1E4D8C'
+          }
+          designName={
+            state.categoryId && state.designId
+              ? DESIGNS[state.categoryId]?.find((d) => d.id === state.designId)?.name
+              : undefined
+          }
           onEmailChange={(email) => dispatch({ type: 'SET_PROFILE', profile: { email } })}
           onSendEmail={async () => {
             if (!state.sessionId) throw new Error('Session unavailable offline.');

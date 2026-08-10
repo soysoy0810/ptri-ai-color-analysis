@@ -88,24 +88,35 @@ export function modelGenderFromProfile(gender: string | null | undefined): Model
 }
 
 /**
- * Garment placement on the standing model (% of model bounding box):
- * `top` = distance from model top to garment top; `width` = garment width vs model width.
+ * Torso recolor region on the standing model (% of model bounding box).
+ * Replaces the old floating-garment overlay — tints the shirt already on the model photo.
  */
-export const GARMENT_ON_MODEL: Record<GarmentKey, { top: number; width: number }> = {
-  polo: { top: 0.14, width: 0.62 },
-  'active-tee': { top: 0.14, width: 0.62 },
-  'linen-shirt': { top: 0.12, width: 0.64 },
-  'formal-shirt': { top: 0.12, width: 0.64 },
-  barong: { top: 0.11, width: 0.66 },
-  'collar-blouse': { top: 0.13, width: 0.6 },
-  terno: { top: 0.1, width: 0.72 },
-  'filipiniana-blouse': { top: 0.12, width: 0.68 },
+export interface TorsoMask {
+  /** Y where the shirt neckline starts */
+  top: number;
+  /** Y where the shirt hem ends */
+  bottom: number;
+  /** Shoulder width as fraction of model width */
+  widthTop: number;
+  /** Waist width as fraction of model width */
+  widthBottom: number;
+}
+
+export const TORSO_MASK: Record<GarmentKey, TorsoMask> = {
+  polo: { top: 0.135, bottom: 0.36, widthTop: 0.36, widthBottom: 0.34 },
+  'active-tee': { top: 0.13, bottom: 0.355, widthTop: 0.37, widthBottom: 0.35 },
+  'linen-shirt': { top: 0.125, bottom: 0.38, widthTop: 0.38, widthBottom: 0.36 },
+  'formal-shirt': { top: 0.12, bottom: 0.385, widthTop: 0.39, widthBottom: 0.37 },
+  barong: { top: 0.115, bottom: 0.48, widthTop: 0.4, widthBottom: 0.42 },
+  'collar-blouse': { top: 0.13, bottom: 0.37, widthTop: 0.36, widthBottom: 0.34 },
+  terno: { top: 0.105, bottom: 0.52, widthTop: 0.44, widthBottom: 0.46 },
+  'filipiniana-blouse': { top: 0.12, bottom: 0.4, widthTop: 0.4, widthBottom: 0.38 },
 };
 
 /** Visitor face placement on the model head (% of model bounding box) */
 export const FACE_ON_MODEL: Record<ModelGender, { top: number; width: number }> = {
-  female: { top: 0.018, width: 0.19 },
-  male: { top: 0.022, width: 0.2 },
+  female: { top: 0.028, width: 0.27 },
+  male: { top: 0.032, width: 0.28 },
 };
 
 /** Scene backdrops for preview environments */

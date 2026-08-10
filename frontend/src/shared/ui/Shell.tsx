@@ -82,7 +82,11 @@ export function Shell({
         <Stepper stepIndex={stepIndex} totalSteps={totalSteps} label={stepLabel} />
       ) : null}
 
-      <main className={`flex-1 overflow-auto ${showHeader ? 'px-5 pb-5 pt-4' : 'p-0'}`}>
+      <main
+        className={`flex min-h-0 flex-1 flex-col ${
+          showHeader ? 'overflow-y-auto overflow-x-hidden px-5 pb-5 pt-4' : 'overflow-hidden p-0'
+        }`}
+      >
         {children}
       </main>
 

@@ -79,6 +79,21 @@ export function garmentForDesign(designId: string | null | undefined): GarmentKe
   return 'polo';
 }
 
+/**
+ * Where the visitor's head sits on each garment, as % of the try-on frame:
+ * `bottom` is the distance from frame bottom to the neck base, `width` the head width.
+ */
+export const HEAD_ANCHOR: Record<GarmentKey, { bottom: number; width: number }> = {
+  polo: { bottom: 55, width: 30 },
+  'active-tee': { bottom: 55, width: 30 },
+  'linen-shirt': { bottom: 56, width: 29 },
+  'formal-shirt': { bottom: 56, width: 29 },
+  barong: { bottom: 56, width: 29 },
+  'collar-blouse': { bottom: 56, width: 27 },
+  terno: { bottom: 57, width: 26 },
+  'filipiniana-blouse': { bottom: 57, width: 26 },
+};
+
 /** Scene backdrops for preview environments */
 export const BACKGROUND_SCENES: Record<string, { from: string; via: string; to: string; label: string }> = {
   studio: { from: '#eef3f8', via: '#dce6f2', to: '#c5d4e6', label: 'Studio' },

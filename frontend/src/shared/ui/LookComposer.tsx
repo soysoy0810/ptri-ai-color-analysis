@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react';
-import { BACKGROUND_SCENES, BACKGROUND_SRC, GARMENT_BASE_SRC, type GarmentKey } from '../../data/garments';
+import {
+  BACKGROUND_SCENES,
+  BACKGROUND_SRC,
+  GARMENT_BASE_SRC,
+  HEAD_ANCHOR,
+  type GarmentKey,
+} from '../../data/garments';
 import type { FaceRegion } from '../lib/types';
 
 interface LookComposerProps {
@@ -12,9 +18,40 @@ interface LookComposerProps {
   className?: string;
 }
 
+function smoothstep(edge0: number, edge1: number, x: number): number {
+  const t = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)));
+  return t * t * (3 - 2 * t);
+}
+
+/** Average RGB of a rectangular patch of image data */
+function patchAverage(
+  data: Uint8ClampedArray,
+  width: number,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+): [number, number, number] {
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  let n = 0;
+  for (let y = y0; y < y1; y += 2) {
+    for (let x = x0; x < x1; x += 2) {
+      const i = (y * width + x) * 4;
+      r += data[i];
+      g += data[i + 1];
+      b += data[i + 2];
+      n += 1;
+    }
+  }
+  return n ? [r / n, g / n, b / n] : [128, 128, 128];
+}
+
 /**
- * Crop the visitor's head out of the captured frame using the detected face
- * box, with a feathered oval alpha so it blends onto the garment collar.
+ * Cut the visitor's head + neck out of the captured frame with the camera
+ * background removed, so the face is truly transparent around the edges and
+ * looks worn on the garment instead of pasted over it.
  */
 function useHeadCrop(captureDataUrl: string | null, faceBox: FaceRegion | null | undefined) {
   const [headUrl, setHeadUrl] = useState<string | null>(null);
@@ -30,38 +67,76 @@ function useHeadCrop(captureDataUrl: string | null, faceBox: FaceRegion | null |
       if (cancelled) return;
       // Fall back to a centered guess when no face box was stored
       const fb = faceBox ?? { x: 0.32, y: 0.12, width: 0.36, height: 0.42 };
-      const cx = (fb.x + fb.width / 2) * img.width;
-      const cy = (fb.y + fb.height / 2) * img.height;
-      // Expand to include hair and chin
-      const w = fb.width * img.width * 1.45;
-      const h = fb.height * img.height * 1.7;
-      const sx = Math.max(0, cx - w / 2);
-      const sy = Math.max(0, cy - h * 0.52);
-      const sw = Math.min(w, img.width - sx);
-      const sh = Math.min(h, img.height - sy);
 
-      const size = 420;
+      // Crop window: hair above the face box, neck below it
+      const left = Math.max(0, (fb.x - fb.width * 0.3) * img.width);
+      const top = Math.max(0, (fb.y - fb.height * 0.45) * img.height);
+      const right = Math.min(img.width, (fb.x + fb.width * 1.3) * img.width);
+      const bottom = Math.min(img.height, (fb.y + fb.height * 1.5) * img.height);
+      const sw = right - left;
+      const sh = bottom - top;
+      if (sw <= 0 || sh <= 0) return;
+
+      const size = 480;
       const canvas = document.createElement('canvas');
       canvas.width = size;
       canvas.height = Math.round((size * sh) / sw);
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
-      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, left, top, sw, sh, 0, 0, canvas.width, canvas.height);
 
-      // Feathered oval alpha so the crop melts into the scene
-      // Tight feathered ellipse so no background survives around the head
-      ctx.globalCompositeOperation = 'destination-in';
-      ctx.save();
-      ctx.translate(canvas.width / 2, canvas.height * 0.47);
-      ctx.scale(1, canvas.height / canvas.width);
-      const mask = ctx.createRadialGradient(0, 0, canvas.width * 0.2, 0, 0, canvas.width * 0.38);
-      mask.addColorStop(0, 'rgba(0,0,0,1)');
-      mask.addColorStop(0.55, 'rgba(0,0,0,1)');
-      mask.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = mask;
-      ctx.fillRect(-canvas.width, (-canvas.height * canvas.width) / canvas.height, canvas.width * 2, (canvas.height * canvas.width) / canvas.height * 2);
-      ctx.restore();
+      const W = canvas.width;
+      const H = canvas.height;
+      const frame = ctx.getImageData(0, 0, W, H);
+      const px = frame.data;
 
+      // Estimate the camera background from the top corners of the crop
+      const bgL = patchAverage(px, W, 2, 2, Math.round(W * 0.14), Math.round(H * 0.2));
+      const bgR = patchAverage(px, W, Math.round(W * 0.86), 2, W - 2, Math.round(H * 0.2));
+      // Estimate the visitor's skin from the center of the face
+      const skin = patchAverage(
+        px,
+        W,
+        Math.round(W * 0.38),
+        Math.round(H * 0.34),
+        Math.round(W * 0.62),
+        Math.round(H * 0.52),
+      );
+
+      // Feathered ellipse around head + neck, then color-based background removal
+      const ecx = W * 0.5;
+      const ecy = H * 0.4;
+      const erx = W * 0.5;
+      const ery = H * 0.52;
+
+      for (let y = 0; y < H; y += 1) {
+        for (let x = 0; x < W; x += 1) {
+          const i = (y * W + x) * 4;
+          const r = px[i];
+          const g = px[i + 1];
+          const b = px[i + 2];
+
+          const dBgL = Math.abs(r - bgL[0]) + Math.abs(g - bgL[1]) + Math.abs(b - bgL[2]);
+          const dBgR = Math.abs(r - bgR[0]) + Math.abs(g - bgR[1]) + Math.abs(b - bgR[2]);
+          const dBg = Math.min(dBgL, dBgR);
+          const dSkin = Math.abs(r - skin[0]) + Math.abs(g - skin[1]) + Math.abs(b - skin[2]);
+
+          // Away from background color → keep; close to skin → always keep
+          const keepColor = smoothstep(28, 80, dBg);
+          const keepSkin = 1 - smoothstep(55, 130, dSkin);
+          const keep = Math.max(keepColor, keepSkin);
+
+          // Feathered ellipse bound so stray far pixels never survive
+          const nx = (x - ecx) / erx;
+          const ny = (y - ecy) / ery;
+          const rad = Math.sqrt(nx * nx + ny * ny);
+          const ellipse = 1 - smoothstep(0.82, 1, rad);
+
+          px[i + 3] = Math.round(px[i + 3] * keep * ellipse);
+        }
+      }
+
+      ctx.putImageData(frame, 0, 0);
       setHeadUrl(canvas.toDataURL('image/png'));
     };
     img.src = captureDataUrl;
@@ -89,6 +164,7 @@ export function LookComposer({
   const scene = BACKGROUND_SCENES[backgroundId] || BACKGROUND_SCENES.studio;
   const sceneSrc = BACKGROUND_SRC[backgroundId] || BACKGROUND_SRC.studio;
   const garmentSrc = GARMENT_BASE_SRC[garmentKey];
+  const anchor = HEAD_ANCHOR[garmentKey] || HEAD_ANCHOR.polo;
   const headUrl = useHeadCrop(captureDataUrl, faceBox);
 
   const garmentMask: React.CSSProperties = {
@@ -142,12 +218,18 @@ export function LookComposer({
         />
       </div>
 
-      {/* Visitor's head — feathered crop sitting on the collar */}
+      {/* Visitor's head + neck — background removed so it reads as truly worn.
+          Rendered behind the garment so the neck tucks into the collar. */}
       {headUrl ? (
         <img
           src={headUrl}
           alt="Your face"
-          className="absolute bottom-[49.5%] left-1/2 z-[3] w-[32%] -translate-x-1/2 drop-shadow-[0_10px_18px_rgba(11,31,58,0.35)]"
+          className="absolute left-1/2 z-[1] -translate-x-1/2"
+          style={{
+            bottom: `${anchor.bottom - 6}%`,
+            width: `${anchor.width}%`,
+            filter: 'drop-shadow(0 8px 14px rgba(11,31,58,0.3))',
+          }}
           draggable={false}
         />
       ) : (

@@ -153,8 +153,8 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
         })}
       </ul>
 
-      {/* CTA in the same spot as the design — above the waves/textile art */}
-      <div className="relative z-[3] mt-auto pb-[24%]">
+      {/* CTA raised to chest height of the AI figure, same left position */}
+      <div className="relative z-[3] mt-auto pb-[36%]">
         <motion.button
           type="button"
           onClick={onStart}

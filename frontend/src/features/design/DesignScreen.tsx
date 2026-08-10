@@ -1,27 +1,39 @@
 import { motion } from 'framer-motion';
-import { Check } from 'lucide-react';
+import { Check, Sparkles } from 'lucide-react';
 import { DESIGNS } from '../../data/catalog';
 import { DESIGN_GARMENT, GARMENT_SRC, garmentForDesign } from '../../data/garments';
 
 interface DesignScreenProps {
   categoryId: string | null;
   selectedId: string | null;
+  /** Visitor's gender from the profile step — used to rank AI suggestions */
+  gender?: string;
   onSelect: (designId: string) => void;
 }
 
-export function DesignScreen({ categoryId, selectedId, onSelect }: DesignScreenProps) {
-  const designs = (categoryId && DESIGNS[categoryId]) || [];
+export function DesignScreen({ categoryId, selectedId, gender, onSelect }: DesignScreenProps) {
+  const all = (categoryId && DESIGNS[categoryId]) || [];
+  const knownGender = gender === 'male' || gender === 'female';
+  // AI ordering: designs made for the visitor first, then unisex, then the rest
+  const designs = knownGender
+    ? [...all].sort((a, b) => rank(a.audience, gender) - rank(b.audience, gender))
+    : all;
 
   return (
     <section className="screen">
       <h1 className="screen-title">Select a design you like.</h1>
-      <p className="screen-sub">Real garment styles from the approved PTRI catalog.</p>
+      <p className="screen-sub">
+        {knownGender
+          ? 'AI sorted these styles for you — best matches first.'
+          : 'Real garment styles from the approved PTRI catalog.'}
+      </p>
 
       <div className="grid grid-cols-2 gap-3">
         {designs.map((design, i) => {
           const key = DESIGN_GARMENT[design.id] || garmentForDesign(design.id);
           const src = GARMENT_SRC[key];
           const active = selectedId === design.id;
+          const aiPick = knownGender && design.audience === gender;
           return (
             <motion.button
               key={design.id}
@@ -44,6 +56,17 @@ export function DesignScreen({ categoryId, selectedId, onSelect }: DesignScreenP
                   <Check className="h-4 w-4" strokeWidth={3} />
                 </motion.span>
               ) : null}
+              {aiPick ? (
+                <motion.span
+                  className="absolute left-2.5 top-2.5 z-[1] flex items-center gap-1 rounded-full bg-navy px-2 py-1 text-[9px] font-extrabold uppercase tracking-wide text-white shadow"
+                  initial={{ opacity: 0, scale: 0.7 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.2 + i * 0.07 }}
+                >
+                  <Sparkles className="h-3 w-3 text-sky-300" />
+                  AI Pick
+                </motion.span>
+              ) : null}
               <div className="mb-2 flex h-[120px] items-end justify-center overflow-hidden rounded-xl bg-gradient-to-b from-accent-soft to-white">
                 <motion.img
                   src={src}
@@ -61,4 +84,10 @@ export function DesignScreen({ categoryId, selectedId, onSelect }: DesignScreenP
       </div>
     </section>
   );
+}
+
+function rank(audience: string | undefined, gender: string | undefined): number {
+  if (audience === gender) return 0;
+  if (audience === 'unisex' || !audience) return 1;
+  return 2;
 }

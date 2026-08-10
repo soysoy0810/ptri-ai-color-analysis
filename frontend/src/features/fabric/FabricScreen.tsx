@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Check } from 'lucide-react';
+import { Check, Sparkles } from 'lucide-react';
 import type { FabricItem } from '../../shared/lib/types';
 
 interface FabricScreenProps {
@@ -64,6 +64,7 @@ export function FabricScreen({ fabrics, selectedId, onSelect }: FabricScreenProp
       <div className="grid grid-cols-2 gap-3">
         {visible.map((fabric, i) => {
           const active = selectedId === fabric.id;
+          const aiPick = i === 0 && (fabric.match ?? 0) > 0;
           return (
             <motion.button
               key={fabric.id}
@@ -84,6 +85,17 @@ export function FabricScreen({ fabrics, selectedId, onSelect }: FabricScreenProp
                   animate={{ scale: 1 }}
                 >
                   <Check className="h-4 w-4" strokeWidth={3} />
+                </motion.span>
+              ) : null}
+              {aiPick ? (
+                <motion.span
+                  className="absolute left-2 top-2 z-[1] flex items-center gap-1 rounded-full bg-navy px-2 py-1 text-[9px] font-extrabold uppercase tracking-wide text-white shadow"
+                  initial={{ opacity: 0, scale: 0.7 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.25 }}
+                >
+                  <Sparkles className="h-3 w-3 text-sky-300" />
+                  Best for You
                 </motion.span>
               ) : null}
 

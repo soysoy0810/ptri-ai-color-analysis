@@ -37,6 +37,7 @@ export const DESIGNS = (
     category_id: string;
     name: string;
     style_code: string;
+    audience?: string;
   }>
 ).reduce<Record<string, DesignItem[]>>((acc, design) => {
   if (!acc[design.category_id]) acc[design.category_id] = [];
@@ -45,6 +46,7 @@ export const DESIGNS = (
     name: design.name,
     style: design.style_code,
     category_id: design.category_id,
+    audience: design.audience || 'unisex',
   });
   return acc;
 }, {});

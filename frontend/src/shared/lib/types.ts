@@ -56,6 +56,8 @@ export interface DesignItem {
   name: string;
   style: string;
   category_id: string;
+  /** Who the garment is designed for: 'male' | 'female' | 'unisex' */
+  audience?: string;
 }
 
 export interface BackgroundItem {

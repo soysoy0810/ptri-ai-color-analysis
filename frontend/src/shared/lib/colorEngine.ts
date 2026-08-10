@@ -1,5 +1,5 @@
 import { APPROVED_PALETTE, FABRICS } from '../../data/catalog';
-import type { FabricItem, LightingInfo, PaletteColor } from './types';
+import type { FabricItem, FaceRegion, LightingInfo, PaletteColor } from './types';
 
 interface Rgb {
   r: number;
@@ -54,22 +54,65 @@ function warmthScore(rgb: Rgb): number {
   return (rgb.r - rgb.b) / 255;
 }
 
-export function averageImageColor(canvas: HTMLCanvasElement): Rgb {
+/**
+ * Average skin tone. When a detected face box is available, sample the inner
+ * area of the face (avoiding hair and background) and keep only skin-like
+ * pixels for an accurate reading.
+ */
+export function averageImageColor(canvas: HTMLCanvasElement, faceBox?: FaceRegion | null): Rgb {
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
   if (!ctx) return { r: 180, g: 140, b: 120 };
   const { width, height } = canvas;
-  const sample = ctx.getImageData(width * 0.3, height * 0.25, width * 0.4, height * 0.45);
+
+  // Inner 60% of the face box, or a centered fallback region
+  const region = faceBox
+    ? {
+        x: (faceBox.x + faceBox.width * 0.2) * width,
+        y: (faceBox.y + faceBox.height * 0.25) * height,
+        w: faceBox.width * 0.6 * width,
+        h: faceBox.height * 0.55 * height,
+      }
+    : { x: width * 0.3, y: height * 0.25, w: width * 0.4, h: height * 0.45 };
+
+  const sample = ctx.getImageData(
+    Math.max(0, Math.round(region.x)),
+    Math.max(0, Math.round(region.y)),
+    Math.max(1, Math.round(Math.min(region.w, width - region.x))),
+    Math.max(1, Math.round(Math.min(region.h, height - region.y))),
+  );
+
   let r = 0;
   let g = 0;
   let b = 0;
   let n = 0;
+  let rAll = 0;
+  let gAll = 0;
+  let bAll = 0;
+  let nAll = 0;
   for (let i = 0; i < sample.data.length; i += 16) {
-    r += sample.data[i];
-    g += sample.data[i + 1];
-    b += sample.data[i + 2];
-    n += 1;
+    const pr = sample.data[i];
+    const pg = sample.data[i + 1];
+    const pb = sample.data[i + 2];
+    rAll += pr;
+    gAll += pg;
+    bAll += pb;
+    nAll += 1;
+    // Skin heuristic: warm hue, reasonable brightness — skips hair/shadows
+    if (pr > 60 && pr > pb && pr - pg > 8 && pg > pb - 10) {
+      r += pr;
+      g += pg;
+      b += pb;
+      n += 1;
+    }
   }
-  return { r: Math.round(r / n), g: Math.round(g / n), b: Math.round(b / n) };
+  // Require enough skin pixels; otherwise fall back to the plain average
+  if (n >= nAll * 0.15 && n > 20) {
+    return { r: Math.round(r / n), g: Math.round(g / n), b: Math.round(b / n) };
+  }
+  if (nAll > 0) {
+    return { r: Math.round(rAll / nAll), g: Math.round(gAll / nAll), b: Math.round(bAll / nAll) };
+  }
+  return { r: 180, g: 140, b: 120 };
 }
 
 export function assessLighting(canvas: HTMLCanvasElement): LightingInfo {

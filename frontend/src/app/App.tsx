@@ -78,7 +78,8 @@ export default function App() {
   ) {
     dispatch({ type: 'SET_LIGHTING', lighting });
     dispatch({ type: 'SET_CAPTURE', dataUrl, faceBox });
-    const sample = averageImageColor(canvas);
+    // Sample skin tone from the detected face region for an accurate reading
+    const sample = averageImageColor(canvas, faceBox);
     const ranked = rankPaletteFromSample(sample);
     dispatch({ type: 'SET_TOP20', top20: ranked });
     goTo('analysis');
@@ -245,6 +246,7 @@ export default function App() {
         <DesignScreen
           categoryId={state.categoryId}
           selectedId={state.designId}
+          gender={state.profile.gender}
           onSelect={(designId) => dispatch({ type: 'SET_DESIGN', designId })}
         />
       );

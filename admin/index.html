@@ -60,12 +60,15 @@
       .stat .l { font-size: 12px; color: var(--muted); font-weight: 700; text-transform: uppercase; }
 
       table { width: 100%; border-collapse: collapse; }
+      table.wrap { display: block; overflow-x: auto; }
       th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); font-size: 13.5px; }
       th { color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em; }
       .muted { color: var(--muted); }
       .pill { display: inline-block; border-radius: 99px; padding: 3px 10px; font-size: 11px; font-weight: 800; }
       .pill.on { background: #e6f4ee; color: var(--green); }
       .pill.off { background: #fdecea; color: var(--red); }
+      .detail-row { font-size: 12px; color: var(--muted); margin-top: 2px; }
+      .email-tag { display: inline-block; background: var(--blue-soft); color: var(--blue); border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 700; margin: 2px 2px 0 0; }
 
       /* palette editor */
       .pal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
@@ -190,8 +193,10 @@
       const VIEWS = [
         ['dashboard', 'Dashboard'],
         ['palette', 'Color Palette'],
-        ['fabrics', 'Fabrics'],
-        ['sessions', 'Kiosk Sessions'],
+        ['fabrics', 'PTRI Fabrics (Tela)'],
+        ['designs', 'Designs / Clothes'],
+        ['visitors', 'Visitors'],
+        ['emails', 'Email Log'],
       ];
 
       function renderShell() {
@@ -227,7 +232,9 @@
           if (name === 'dashboard') return renderDashboard(view);
           if (name === 'palette') return renderPalette(view);
           if (name === 'fabrics') return renderFabrics(view);
-          if (name === 'sessions') return renderSessions(view);
+          if (name === 'designs') return renderDesigns(view);
+          if (name === 'visitors') return renderVisitors(view);
+          if (name === 'emails') return renderEmails(view);
         } catch (err) {
           view.innerHTML = `<div class="card"><h2>Something went wrong</h2><p class="muted">${err.message}</p></div>`;
         }
@@ -249,8 +256,9 @@
           </div>
           <div class="card" style="margin-top:16px">
             <h2>Welcome, ${adminName}</h2>
-            <p class="sub">Use <strong>Color Palette</strong> to add or edit the approved kiosk colors —
-            the kiosk loads them automatically. Kiosk visits appear under <strong>Kiosk Sessions</strong>.</p>
+            <p class="sub">Manage <strong>Color Palette</strong>, <strong>PTRI Fabrics (Tela)</strong>, and <strong>Designs / Clothes</strong>.
+            Every visitor who uses the kiosk appears under <strong>Visitors</strong> with their name, age, gender, and choices.
+            Emails they send results to are in <strong>Email Log</strong>.</p>
           </div>`;
       }
 
@@ -363,49 +371,260 @@
         }));
       }
 
-      /* ---------------- fabrics ---------------- */
+      /* ---------------- fabrics (tela) ---------------- */
       async function renderFabrics(view) {
-        const catalog = await call('/catalog');
+        const fabrics = await call('/admin/fabrics');
         view.innerHTML = `
           <div class="card">
-            <h2>PTRI Fabrics (${catalog.fabrics.length})</h2>
-            <p class="sub">Textiles offered on the kiosk with their base AI match score.</p>
-            <table>
-              <thead><tr><th></th><th>Code</th><th>Name</th><th>Hex</th><th>Base Match</th></tr></thead>
-              <tbody>${catalog.fabrics.map((f) => `
+            <h2>Add PTRI Fabric (Tela)</h2>
+            <p class="sub">Fabrics shown on the kiosk for visitors to choose. Changes appear on the kiosk immediately.</p>
+            <form class="add-row" id="add-fabric-form" style="grid-template-columns:100px 1fr 130px 90px auto">
+              <div class="field"><label>Code</label><input id="fab-code" required placeholder="001" /></div>
+              <div class="field"><label>Name</label><input id="fab-name" required placeholder="Navy Abaca Blend" /></div>
+              <div class="field"><label>Color</label><input id="fab-hex" type="color" value="#1E4D8C" /></div>
+              <div class="field"><label>Match %</label><input id="fab-match" type="number" min="0" max="100" value="80" /></div>
+              <button class="btn btn-blue" type="submit">ADD</button>
+            </form>
+          </div>
+          <div class="card">
+            <h2>PTRI Fabrics (${fabrics.length})</h2>
+            <table class="wrap">
+              <thead><tr><th></th><th>Code</th><th>Name</th><th>Hex</th><th>Match</th><th>Status</th><th></th></tr></thead>
+              <tbody>${fabrics.map((f) => `
                 <tr>
                   <td><div style="width:34px;height:34px;border-radius:10px;background:${f.hex};border:1px solid rgba(0,0,0,.08)"></div></td>
-                  <td>${f.code}</td><td>${f.name}</td><td class="muted">${f.hex}</td><td>${f.base_match}%</td>
+                  <td>${f.code}</td><td><strong>${f.name}</strong></td><td class="muted">${f.hex}</td>
+                  <td>${f.base_match}%</td>
+                  <td><span class="pill ${f.is_active ? 'on' : 'off'}">${f.is_active ? 'Active' : 'Hidden'}</span></td>
+                  <td style="white-space:nowrap">
+                    <button class="btn btn-ghost fab-edit" data-id="${f.id}" style="padding:6px 10px;font-size:11px">Edit</button>
+                    <button class="btn btn-ghost fab-tog" data-id="${f.id}" data-active="${f.is_active ? 0 : 1}" style="padding:6px 10px;font-size:11px">${f.is_active ? 'Hide' : 'Show'}</button>
+                  </td>
                 </tr>`).join('')}
               </tbody>
             </table>
-          </div>`;
+          </div>
+          <dialog id="fab-dialog">
+            <form id="fab-edit-form">
+              <h2 style="margin:0 0 14px">Edit Fabric</h2>
+              <div class="field"><label>Code</label><input id="fab-edit-code" required /></div>
+              <div class="field"><label>Name</label><input id="fab-edit-name" required /></div>
+              <div class="field"><label>Color</label><input id="fab-edit-hex" type="color" style="width:100%;height:46px;padding:4px;border:1.5px solid var(--line);border-radius:12px" /></div>
+              <div class="field"><label>Base match %</label><input id="fab-edit-match" type="number" min="0" max="100" /></div>
+              <div style="display:flex;gap:10px;margin-top:16px">
+                <button class="btn btn-ghost" type="button" id="fab-cancel" style="flex:1">Cancel</button>
+                <button class="btn btn-blue" type="submit" style="flex:1">Save</button>
+              </div>
+            </form>
+          </dialog>`;
+
+        document.getElementById('add-fabric-form').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          try {
+            await call('/admin/fabrics', {
+              method: 'POST',
+              body: JSON.stringify({
+                code: document.getElementById('fab-code').value,
+                name: document.getElementById('fab-name').value,
+                hex: document.getElementById('fab-hex').value,
+                base_match: Number(document.getElementById('fab-match').value),
+              }),
+            });
+            toast('Fabric added.');
+            renderFabrics(view);
+          } catch (err) { toast(err.message); }
+        });
+
+        const dialog = document.getElementById('fab-dialog');
+        let editing = null;
+        view.querySelectorAll('.fab-edit').forEach((b) => b.addEventListener('click', () => {
+          editing = fabrics.find((f) => f.id === b.dataset.id);
+          document.getElementById('fab-edit-code').value = editing.code;
+          document.getElementById('fab-edit-name').value = editing.name;
+          document.getElementById('fab-edit-hex').value = editing.hex;
+          document.getElementById('fab-edit-match').value = editing.base_match;
+          dialog.showModal();
+        }));
+        document.getElementById('fab-cancel').addEventListener('click', () => dialog.close());
+        document.getElementById('fab-edit-form').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          try {
+            await call('/admin/fabrics/' + editing.id, {
+              method: 'PUT',
+              body: JSON.stringify({
+                code: document.getElementById('fab-edit-code').value,
+                name: document.getElementById('fab-edit-name').value,
+                hex: document.getElementById('fab-edit-hex').value,
+                base_match: Number(document.getElementById('fab-edit-match').value),
+              }),
+            });
+            dialog.close();
+            toast('Fabric updated.');
+            renderFabrics(view);
+          } catch (err) { toast(err.message); }
+        });
+        view.querySelectorAll('.fab-tog').forEach((b) => b.addEventListener('click', async () => {
+          await call('/admin/fabrics/' + b.dataset.id, { method: 'PUT', body: JSON.stringify({ is_active: b.dataset.active === '1' }) });
+          renderFabrics(view);
+        }));
       }
 
-      /* ---------------- sessions ---------------- */
-      async function renderSessions(view) {
+      /* ---------------- designs / clothes ---------------- */
+      async function renderDesigns(view) {
+        const [designs, categories] = await Promise.all([
+          call('/admin/designs'),
+          call('/admin/categories'),
+        ]);
+        const catOpts = categories.map((c) => `<option value="${c.id}">${c.label}</option>`).join('');
+        view.innerHTML = `
+          <div class="card">
+            <h2>Add Design / Clothing Style</h2>
+            <p class="sub">Garment styles visitors pick on the kiosk (polo, barong, terno, etc.).</p>
+            <form class="add-row" id="add-design-form" style="grid-template-columns:1fr 1fr 80px auto">
+              <div class="field"><label>Category</label><select id="des-cat" required style="width:100%;padding:12px;border:1.5px solid var(--line);border-radius:12px">${catOpts}</select></div>
+              <div class="field"><label>Design name</label><input id="des-name" required placeholder="Classic Polo" /></div>
+              <div class="field"><label>Style</label><input id="des-code" placeholder="A" maxlength="4" /></div>
+              <button class="btn btn-blue" type="submit">ADD</button>
+            </form>
+          </div>
+          <div class="card">
+            <h2>Designs / Clothes (${designs.length})</h2>
+            <table class="wrap">
+              <thead><tr><th>Category</th><th>Design Name</th><th>Style</th><th>Status</th><th></th></tr></thead>
+              <tbody>${designs.map((d) => `
+                <tr>
+                  <td class="muted">${d.category_label || d.category_id}</td>
+                  <td><strong>${d.name}</strong></td>
+                  <td>${d.style_code || '—'}</td>
+                  <td><span class="pill ${d.is_active ? 'on' : 'off'}">${d.is_active ? 'Active' : 'Hidden'}</span></td>
+                  <td style="white-space:nowrap">
+                    <button class="btn btn-ghost des-edit" data-id="${d.id}" style="padding:6px 10px;font-size:11px">Edit</button>
+                    <button class="btn btn-ghost des-tog" data-id="${d.id}" data-active="${d.is_active ? 0 : 1}" style="padding:6px 10px;font-size:11px">${d.is_active ? 'Hide' : 'Show'}</button>
+                  </td>
+                </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+          <dialog id="des-dialog">
+            <form id="des-edit-form">
+              <h2 style="margin:0 0 14px">Edit Design</h2>
+              <div class="field"><label>Category</label><select id="des-edit-cat" required style="width:100%;padding:12px;border:1.5px solid var(--line);border-radius:12px">${catOpts}</select></div>
+              <div class="field"><label>Name</label><input id="des-edit-name" required /></div>
+              <div class="field"><label>Style code</label><input id="des-edit-code" maxlength="4" /></div>
+              <div style="display:flex;gap:10px;margin-top:16px">
+                <button class="btn btn-ghost" type="button" id="des-cancel" style="flex:1">Cancel</button>
+                <button class="btn btn-blue" type="submit" style="flex:1">Save</button>
+              </div>
+            </form>
+          </dialog>`;
+
+        document.getElementById('add-design-form').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          try {
+            await call('/admin/designs', {
+              method: 'POST',
+              body: JSON.stringify({
+                category_id: document.getElementById('des-cat').value,
+                name: document.getElementById('des-name').value,
+                style_code: document.getElementById('des-code').value || null,
+              }),
+            });
+            toast('Design added.');
+            renderDesigns(view);
+          } catch (err) { toast(err.message); }
+        });
+
+        const dialog = document.getElementById('des-dialog');
+        let editing = null;
+        view.querySelectorAll('.des-edit').forEach((b) => b.addEventListener('click', () => {
+          editing = designs.find((d) => d.id === b.dataset.id);
+          document.getElementById('des-edit-cat').value = editing.category_id;
+          document.getElementById('des-edit-name').value = editing.name;
+          document.getElementById('des-edit-code').value = editing.style_code || '';
+          dialog.showModal();
+        }));
+        document.getElementById('des-cancel').addEventListener('click', () => dialog.close());
+        document.getElementById('des-edit-form').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          try {
+            await call('/admin/designs/' + editing.id, {
+              method: 'PUT',
+              body: JSON.stringify({
+                category_id: document.getElementById('des-edit-cat').value,
+                name: document.getElementById('des-edit-name').value,
+                style_code: document.getElementById('des-edit-code').value || null,
+              }),
+            });
+            dialog.close();
+            toast('Design updated.');
+            renderDesigns(view);
+          } catch (err) { toast(err.message); }
+        });
+        view.querySelectorAll('.des-tog').forEach((b) => b.addEventListener('click', async () => {
+          await call('/admin/designs/' + b.dataset.id, { method: 'PUT', body: JSON.stringify({ is_active: b.dataset.active === '1' }) });
+          renderDesigns(view);
+        }));
+      }
+
+      /* ---------------- visitors ---------------- */
+      async function renderVisitors(view) {
         const sessions = await call('/admin/sessions');
         view.innerHTML = `
           <div class="card">
-            <h2>Kiosk Sessions (${sessions.length} latest)</h2>
-            <p class="sub">Every visit recorded by the kiosk, newest first.</p>
-            <table>
-              <thead><tr><th>Visitor</th><th>Age</th><th>Gender</th><th>Email</th>
-                <th>Category</th><th>Design</th><th>Status</th><th>Date</th></tr></thead>
-              <tbody>${sessions.map((s) => `
+            <h2>Visitors (${sessions.length})</h2>
+            <p class="sub">Everyone who tried the AI kiosk — profile info, their choices, and email if they sent results.</p>
+            <table class="wrap">
+              <thead><tr>
+                <th>Visitor</th><th>Age</th><th>Gender</th><th>Email</th>
+                <th>Category</th><th>Design</th><th>Fabric (Tela)</th><th>Status</th><th>Date</th>
+              </tr></thead>
+              <tbody>${sessions.map((s) => {
+                const emails = (s.emails_sent || []).map((e) =>
+                  `<span class="email-tag">${e.email} (${e.status})</span>`).join('');
+                const profileEmail = s.email ? `<span class="email-tag">${s.email}</span>` : '';
+                const emailCell = emails || profileEmail || '<span class="muted">—</span>';
+                return `
                 <tr>
-                  <td><strong>${s.full_name || 'Guest'}</strong></td>
+                  <td><strong>${s.full_name || 'Guest'}</strong>
+                    ${s.result_token ? `<div class="detail-row">Token: ${s.result_token}</div>` : ''}</td>
                   <td class="muted">${s.age_range || '—'}</td>
                   <td class="muted">${s.gender || '—'}</td>
-                  <td class="muted">${s.email || '—'}</td>
-                  <td>${s.category_id || '—'}</td>
-                  <td>${s.design_id || '—'}</td>
+                  <td>${emailCell}</td>
+                  <td>${s.category_label || s.category_id || '—'}</td>
+                  <td>${s.design_name || s.design_id || '—'}</td>
+                  <td>${s.fabric_name ? s.fabric_name + (s.fabric_code ? ' (' + s.fabric_code + ')' : '') : (s.fabric_id || '—')}</td>
                   <td><span class="pill ${s.completed_at ? 'on' : 'off'}">${s.completed_at ? 'Completed' : s.status}</span></td>
-                  <td class="muted">${new Date(s.created_at).toLocaleString()}</td>
+                  <td class="muted" style="white-space:nowrap">${new Date(s.created_at).toLocaleString()}</td>
+                </tr>`;
+              }).join('')}
+              </tbody>
+            </table>
+            ${sessions.length === 0 ? '<p class="muted" style="margin-top:14px">No visitors yet — records appear after someone uses the kiosk.</p>' : ''}
+          </div>`;
+      }
+
+      /* ---------------- email log ---------------- */
+      async function renderEmails(view) {
+        const rows = await call('/admin/emails');
+        view.innerHTML = `
+          <div class="card">
+            <h2>Email Log (${rows.length})</h2>
+            <p class="sub">Every time a visitor sends their AI color results to an email address.</p>
+            <table class="wrap">
+              <thead><tr><th>Email</th><th>Visitor</th><th>Age</th><th>Gender</th><th>Status</th><th>Sent</th><th>Queued</th></tr></thead>
+              <tbody>${rows.map((e) => `
+                <tr>
+                  <td><strong>${e.email}</strong></td>
+                  <td>${e.full_name || 'Guest'}</td>
+                  <td class="muted">${e.age_range || '—'}</td>
+                  <td class="muted">${e.gender || '—'}</td>
+                  <td><span class="pill ${e.status === 'sent' ? 'on' : 'off'}">${e.status}</span></td>
+                  <td class="muted">${e.sent_at ? new Date(e.sent_at).toLocaleString() : '—'}</td>
+                  <td class="muted">${new Date(e.created_at).toLocaleString()}</td>
                 </tr>`).join('')}
               </tbody>
             </table>
-            ${sessions.length === 0 ? '<p class="muted" style="margin-top:14px">No sessions yet — they appear here after visitors use the kiosk.</p>' : ''}
+            ${rows.length === 0 ? '<p class="muted" style="margin-top:14px">No emails queued yet.</p>' : ''}
           </div>`;
       }
 

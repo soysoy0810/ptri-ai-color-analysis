@@ -1,14 +1,33 @@
 import { motion } from 'framer-motion';
 import { BookOpenText, Droplets, Palette, Shirt } from 'lucide-react';
 import { CATEGORIES, DESIGNS } from '../../data/catalog';
+import type { SkinProfile } from '../../shared/lib/colorEngine';
 import type { PaletteColor, SessionSummary } from '../../shared/lib/types';
 
 interface RecommendationScreenProps {
   summary: SessionSummary;
+  skinProfile?: SkinProfile | null;
 }
 
-/** Derive a simple seasonal-style profile from the visitor's chosen colors */
-function colorProfile(colors: PaletteColor[]): { name: string; blurb: string } {
+/**
+ * Profile card copy. Prefers the real skin analysis from the camera;
+ * falls back to deriving from the chosen colors.
+ */
+function colorProfile(
+  colors: PaletteColor[],
+  skin?: SkinProfile | null,
+): { name: string; blurb: string } {
+  if (skin) {
+    const tone = skin.undertone[0].toUpperCase() + skin.undertone.slice(1);
+    const depth = skin.depth[0].toUpperCase() + skin.depth.slice(1);
+    const blurb =
+      skin.undertone === 'warm'
+        ? 'Your skin has golden warm undertones — earthy, golden and rich colors flatter you most.'
+        : skin.undertone === 'cool'
+          ? 'Your skin has cool rosy undertones — jewel tones, blues and crisp colors flatter you most.'
+          : 'Your skin has balanced neutral undertones — both warm and cool colors work beautifully on you.';
+    return { name: `${tone} – ${depth}`, blurb };
+  }
   if (!colors.length) {
     return { name: 'Balanced', blurb: 'A versatile palette works well for you.' };
   }
@@ -41,13 +60,13 @@ const TILES = [
   { icon: Droplets, title: 'Care Tips', sub: 'Keep it perfect' },
 ] as const;
 
-export function RecommendationScreen({ summary }: RecommendationScreenProps) {
+export function RecommendationScreen({ summary, skinProfile }: RecommendationScreenProps) {
   const category = CATEGORIES.find((c) => c.id === summary.categoryId);
   const design =
     (summary.categoryId && DESIGNS[summary.categoryId]?.find((d) => d.id === summary.designId)) ||
     undefined;
   const fabric = summary.fabric;
-  const profile = colorProfile(summary.colors);
+  const profile = colorProfile(summary.colors, skinProfile);
 
   return (
     <section className="screen">

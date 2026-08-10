@@ -10,7 +10,16 @@ export type GarmentKey =
   | 'terno'
   | 'filipiniana-blouse';
 
+export type ModelGender = 'male' | 'female';
+
 const BASE = `${import.meta.env.BASE_URL}garments`;
+const MODEL_BASE = `${import.meta.env.BASE_URL}models`;
+
+/** Full-body standing models — hands visible, used for realistic try-on */
+export const MODEL_SRC: Record<ModelGender, string> = {
+  female: `${MODEL_BASE}/model-female-standing.png`,
+  male: `${MODEL_BASE}/model-male-standing.png`,
+};
 
 export const GARMENT_SRC: Record<GarmentKey, string> = {
   polo: `${BASE}/garment-polo.png`,
@@ -37,37 +46,30 @@ export const GARMENT_BASE_SRC: Record<GarmentKey, string> = {
 
 /** Map each catalog design id → garment photo */
 export const DESIGN_GARMENT: Record<string, GarmentKey> = {
-  // Filipiniana
   fp1: 'barong',
   fp2: 'terno',
   fp3: 'filipiniana-blouse',
   fp4: 'terno',
-  // Uniform
   u1: 'polo',
   u2: 'barong',
   u3: 'collar-blouse',
   u4: 'polo',
-  // Casual
   ca1: 'active-tee',
   ca2: 'linen-shirt',
   ca3: 'collar-blouse',
   ca4: 'polo',
-  // Smart casual
   sc1: 'formal-shirt',
   sc2: 'polo',
   sc3: 'linen-shirt',
   sc4: 'collar-blouse',
-  // Formal
   f1: 'formal-shirt',
   f2: 'collar-blouse',
   f3: 'formal-shirt',
   f4: 'barong',
-  // Active
   a1: 'active-tee',
   a2: 'active-tee',
   a3: 'polo',
   a4: 'polo',
-  // Fabrics only — show drape on a neutral top
   fb1: 'linen-shirt',
   fb2: 'collar-blouse',
   fb3: 'polo',
@@ -79,19 +81,31 @@ export function garmentForDesign(designId: string | null | undefined): GarmentKe
   return 'polo';
 }
 
+/** Resolve kiosk gender string → model photo */
+export function modelGenderFromProfile(gender: string | null | undefined): ModelGender {
+  if (gender === 'male') return 'male';
+  return 'female';
+}
+
 /**
- * Where the visitor's head sits on each garment, as % of the try-on frame:
- * `bottom` is the distance from frame bottom to the neck base, `width` the head width.
+ * Garment placement on the standing model (% of model bounding box):
+ * `top` = distance from model top to garment top; `width` = garment width vs model width.
  */
-export const HEAD_ANCHOR: Record<GarmentKey, { bottom: number; width: number }> = {
-  polo: { bottom: 55, width: 30 },
-  'active-tee': { bottom: 55, width: 30 },
-  'linen-shirt': { bottom: 56, width: 29 },
-  'formal-shirt': { bottom: 56, width: 29 },
-  barong: { bottom: 56, width: 29 },
-  'collar-blouse': { bottom: 56, width: 27 },
-  terno: { bottom: 57, width: 26 },
-  'filipiniana-blouse': { bottom: 57, width: 26 },
+export const GARMENT_ON_MODEL: Record<GarmentKey, { top: number; width: number }> = {
+  polo: { top: 0.14, width: 0.62 },
+  'active-tee': { top: 0.14, width: 0.62 },
+  'linen-shirt': { top: 0.12, width: 0.64 },
+  'formal-shirt': { top: 0.12, width: 0.64 },
+  barong: { top: 0.11, width: 0.66 },
+  'collar-blouse': { top: 0.13, width: 0.6 },
+  terno: { top: 0.1, width: 0.72 },
+  'filipiniana-blouse': { top: 0.12, width: 0.68 },
+};
+
+/** Visitor face placement on the model head (% of model bounding box) */
+export const FACE_ON_MODEL: Record<ModelGender, { top: number; width: number }> = {
+  female: { top: 0.018, width: 0.19 },
+  male: { top: 0.022, width: 0.2 },
 };
 
 /** Scene backdrops for preview environments */
@@ -104,7 +118,6 @@ export const BACKGROUND_SCENES: Record<string, { from: string; via: string; to: 
   travel: { from: '#f5ebe0', via: '#e0c9a8', to: '#c4a574', label: 'Travel' },
 };
 
-/** Real photo backdrops for preview environments */
 const BG_BASE = `${import.meta.env.BASE_URL}backgrounds`;
 export const BACKGROUND_SRC: Record<string, string> = {
   studio: `${BG_BASE}/bg-studio.png`,

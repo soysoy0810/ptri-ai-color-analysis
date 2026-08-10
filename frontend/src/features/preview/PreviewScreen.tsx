@@ -8,6 +8,7 @@ import { LookComposer } from '../../shared/ui/LookComposer';
 interface PreviewScreenProps {
   captureDataUrl: string | null;
   faceBox: FaceRegion | null;
+  gender: string;
   categoryId: string | null;
   designId: string | null;
   backgroundId: string;
@@ -20,6 +21,7 @@ interface PreviewScreenProps {
 export function PreviewScreen({
   captureDataUrl,
   faceBox,
+  gender,
   categoryId,
   designId,
   backgroundId,
@@ -42,6 +44,7 @@ export function PreviewScreen({
         <LookComposer
           captureDataUrl={captureDataUrl}
           faceBox={faceBox}
+          gender={gender}
           garmentKey={garmentKey}
           fabricHex={garmentColor}
           backgroundId={backgroundId}

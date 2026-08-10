@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { Check } from 'lucide-react';
 import { Shell } from '../shared/ui/Shell';
 import { NavButtons } from '../shared/ui/NavButtons';
-import { useKioskSession } from '../shared/hooks/useKioskSession';
+import { STEPS, useKioskSession } from '../shared/hooks/useKioskSession';
 import { api } from '../shared/api/client';
-import { averageImageColor, rankPaletteFromSample, setActivePalette } from '../shared/lib/colorEngine';
-import { DESIGNS, FABRICS } from '../data/catalog';
-import { garmentForDesign } from '../data/garments';
-import type { FaceRegion, LightingInfo, PaletteColor, SelectionMode } from '../shared/lib/types';
+import {
+  analyzeSkinTone,
+  averageImageColor,
+  rankPaletteFromSample,
+  setActivePalette,
+  type SkinProfile,
+} from '../shared/lib/colorEngine';
+import type { FaceRegion, LightingInfo, PaletteColor, SelectionMode, StepId } from '../shared/lib/types';
 import { WelcomeScreen } from '../features/welcome/WelcomeScreen';
 import { ProfileScreen } from '../features/profile/ProfileScreen';
 import { AutoScanScreen } from '../features/camera/AutoScanScreen';
@@ -29,6 +32,7 @@ export default function App() {
   const { state, dispatch, stepIndex, totalSteps, stepLabel, goTo, next, back, reset, summary } =
     useKioskSession();
   const [toast, setToast] = useState('');
+  const [skinProfile, setSkinProfile] = useState<SkinProfile | null>(null);
 
   // Load the live palette managed in the admin panel; fall back to bundled JSON offline
   useEffect(() => {
@@ -41,6 +45,18 @@ export default function App() {
       .catch(() => {
         /* offline — bundled palette stays active */
       });
+  }, []);
+
+  // New visitor — drop the previous skin analysis
+  useEffect(() => {
+    if (state.step === 'welcome') setSkinProfile(null);
+  }, [state.step]);
+
+  // QA / board review: ?preview=results or ?preview=thanks
+  useEffect(() => {
+    const preview = new URLSearchParams(window.location.search).get('preview') as StepId | null;
+    if (preview && STEPS.includes(preview)) goTo(preview);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot deep link on load
   }, []);
 
   useEffect(() => {
@@ -91,23 +107,20 @@ export default function App() {
   ) {
     dispatch({ type: 'SET_LIGHTING', lighting });
     dispatch({ type: 'SET_CAPTURE', dataUrl, faceBox });
-    // Sample skin tone from the detected face region for an accurate reading
+    // Read skin from the forehead + cheeks of the detected face, then rank
+    // the palette with undertone/depth color science
     const sample = averageImageColor(canvas, faceBox);
+    setSkinProfile(analyzeSkinTone(sample));
     const ranked = rankPaletteFromSample(sample);
     dispatch({ type: 'SET_TOP20', top20: ranked });
     goTo('analysis');
 
+    // Record the capture server-side; the local Lab/ITA ranking stays
+    // authoritative because it is computed from the detected face region
     if (state.sessionId) {
-      api
-        .analyze(state.sessionId, dataUrl)
-        .then((res) => {
-          if (res?.top20?.length) {
-            dispatch({ type: 'SET_TOP20', top20: res.top20 });
-          }
-        })
-        .catch(() => {
-          /* local ranking already applied */
-        });
+      api.analyze(state.sessionId, dataUrl).catch(() => {
+        /* offline-friendly */
+      });
     }
   }
 
@@ -289,6 +302,7 @@ export default function App() {
         <PreviewScreen
           captureDataUrl={state.captureDataUrl}
           faceBox={state.faceBox}
+          gender={state.profile.gender}
           categoryId={state.categoryId}
           designId={state.designId}
           backgroundId={state.backgroundId}
@@ -301,41 +315,32 @@ export default function App() {
       footer = <NavButtons onBack={back} onNext={next} nextLabel="NEXT" />;
       break;
     case 'recommendation':
-      body = <RecommendationScreen summary={summary} />;
+      body = <RecommendationScreen summary={summary} skinProfile={skinProfile} />;
       footer = <NavButtons onBack={back} onNext={finalizeSession} nextLabel="GET YOUR RESULT" />;
       break;
-    case 'results': {
-      const resultFabric = FABRICS.find((f) => f.id === state.fabricId);
-      const resultDesign =
-        (state.categoryId && DESIGNS[state.categoryId]?.find((d) => d.id === state.designId)) ||
-        undefined;
+    case 'results':
       body = (
         <ResultsScreen
           email={state.profile.email}
           resultToken={state.resultToken}
-          captureDataUrl={state.captureDataUrl}
-          faceBox={state.faceBox}
-          garmentKey={garmentForDesign(state.designId)}
-          fabricHex={resultFabric?.hex || state.selectedColors[0]?.hex || '#1E4D8C'}
-          backgroundId={state.backgroundId}
-          designName={resultDesign?.name}
           onEmailChange={(email) => dispatch({ type: 'SET_PROFILE', profile: { email } })}
           onSendEmail={async () => {
             if (!state.sessionId) throw new Error('Session unavailable offline.');
             if (!state.profile.email) throw new Error('Enter an email address first.');
             await api.sendEmail(state.sessionId, state.profile.email);
           }}
-          onSkip={() => goTo('thanks')}
+          onSent={() => goTo('thanks')}
         />
       );
       footer = (
-        <button type="button" className="btn btn-primary w-full" onClick={() => goTo('thanks')}>
-          <Check className="h-4 w-4" />
-          Finish Session
-        </button>
+        <NavButtons
+          onBack={() => goTo('recommendation')}
+          onNext={() => goTo('thanks')}
+          nextLabel="DONE"
+          nextIcon="check"
+        />
       );
       break;
-    }
     case 'thanks':
       body = <ThanksScreen name={state.profile.fullName} onReset={reset} />;
       break;

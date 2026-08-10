@@ -1,37 +1,24 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
-import { CheckCircle2, QrCode, Send } from 'lucide-react';
-import type { GarmentKey } from '../../data/garments';
-import type { FaceRegion } from '../../shared/lib/types';
-import { LookComposer } from '../../shared/ui/LookComposer';
+import { CheckCircle2, Mail, SendHorizonal } from 'lucide-react';
+import { TrianglePattern } from '../../shared/ui/TrianglePattern';
 
 interface ResultsScreenProps {
   email: string;
   resultToken: string | null;
-  captureDataUrl: string | null;
-  faceBox: FaceRegion | null;
-  garmentKey: GarmentKey;
-  fabricHex: string;
-  backgroundId: string;
-  designName?: string;
   onEmailChange: (email: string) => void;
   onSendEmail: () => Promise<void>;
-  onSkip: () => void;
+  /** Called after a successful send so the kiosk can advance */
+  onSent?: () => void;
 }
 
 export function ResultsScreen({
   email,
   resultToken,
-  captureDataUrl,
-  faceBox,
-  garmentKey,
-  fabricHex,
-  backgroundId,
-  designName,
   onEmailChange,
   onSendEmail,
-  onSkip,
+  onSent,
 }: ResultsScreenProps) {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
@@ -48,6 +35,7 @@ export function ResultsScreen({
     try {
       await onSendEmail();
       setSent(true);
+      window.setTimeout(() => onSent?.(), 1200);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to send email right now.');
     } finally {
@@ -56,94 +44,85 @@ export function ResultsScreen({
   }
 
   return (
-    <section className="screen">
-      <h1 className="screen-title">Get Your Result</h1>
-      <p className="screen-sub">Send your result to your email or scan the QR code.</p>
+    <section className="screen relative">
+      <TrianglePattern className="absolute -right-3 -top-1 z-0 h-24 w-32 rotate-180 opacity-70" />
 
-      {/* Your final look — face + garment + chosen background */}
-      <motion.div
-        className="mb-4"
-        initial={{ opacity: 0, scale: 0.97 }}
-        animate={{ opacity: 1, scale: 1 }}
-      >
-        <LookComposer
-          captureDataUrl={captureDataUrl}
-          faceBox={faceBox}
-          garmentKey={garmentKey}
-          fabricHex={fabricHex}
-          backgroundId={backgroundId}
-          designName={designName}
-          className="min-h-[340px]"
-        />
-      </motion.div>
+      <h1 className="screen-title relative z-[1] uppercase tracking-wide">Get Your Results</h1>
 
-      {/* Send via Email */}
       <motion.div
-        className="rounded-2xl border border-line bg-white p-4 shadow-sm"
-        initial={{ opacity: 0, y: 12 }}
+        className="relative z-[1] mt-3 overflow-hidden rounded-[28px] border border-line bg-white p-5 shadow-[0_12px_32px_rgba(11,31,58,0.08)]"
+        initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="mb-2 text-[11px] font-extrabold uppercase tracking-wide text-muted">
-          Send via Email
+        <TrianglePattern className="absolute -right-6 -top-8 h-28 w-36 rotate-180 opacity-45" />
+
+        <div className="relative z-[1] grid grid-cols-[1fr_auto_1fr] items-stretch gap-3">
+          {/* Email column */}
+          <div className="flex min-w-0 flex-col items-center text-center">
+            <motion.span
+              className="grid h-[4.75rem] w-[4.75rem] place-items-center rounded-full bg-gradient-to-br from-[#0b1f3a] via-[#123a6b] to-[#2f80ed] shadow-[0_12px_28px_rgba(18,58,107,0.35)]"
+              animate={{ scale: [1, 1.04, 1] }}
+              transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              <Mail className="h-9 w-9 text-white" strokeWidth={2} />
+            </motion.span>
+
+            <p className="mt-3 text-[14px] font-bold leading-snug text-navy">
+              Send your results to your email or scan QR.
+            </p>
+
+            <input
+              id="result-email"
+              type="email"
+              className="mt-3 min-h-[48px] w-full rounded-xl border border-line bg-white px-3 text-[13px] text-navy outline-none focus:border-accent"
+              placeholder="Enter your email address"
+              value={email}
+              onChange={(e) => onEmailChange(e.target.value)}
+              autoComplete="email"
+            />
+
+            <motion.button
+              type="button"
+              className="btn mt-2.5 w-full bg-navy px-3 text-[12px] text-white"
+              onClick={handleEmail}
+              disabled={sending || !email.trim()}
+              whileTap={{ scale: 0.97 }}
+            >
+              {sent ? (
+                <>
+                  <CheckCircle2 className="h-4 w-4" /> SENT
+                </>
+              ) : (
+                <>
+                  {sending ? 'SENDING…' : 'SEND RESULTS'} <SendHorizonal className="h-4 w-4" />
+                </>
+              )}
+            </motion.button>
+            {error ? <p className="mt-2 text-left text-xs text-red-700">{error}</p> : null}
+          </div>
+
+          {/* Vertical OR divider */}
+          <div className="flex flex-col items-center justify-center px-1">
+            <span className="w-px flex-1 bg-line" />
+            <span className="my-2 text-[11px] font-extrabold uppercase tracking-wide text-muted">
+              or
+            </span>
+            <span className="w-px flex-1 bg-line" />
+          </div>
+
+          {/* QR column */}
+          <div className="flex min-w-0 flex-col items-center justify-center text-center">
+            <span className="mb-2 text-[13px] font-extrabold text-navy">Scan QR Code</span>
+            <motion.div
+              className="rounded-2xl border border-line bg-white p-2.5 shadow-sm"
+              animate={{ scale: [1, 1.015, 1] }}
+              transition={{ duration: 2.4, repeat: Infinity }}
+            >
+              <QRCodeSVG value={resultUrl} size={132} level="M" />
+            </motion.div>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <input
-            id="result-email"
-            type="email"
-            className="min-h-touch w-full flex-1 rounded-2xl border border-line bg-white px-4 text-base text-navy outline-none focus:border-accent"
-            placeholder="Enter your email address"
-            value={email}
-            onChange={(e) => onEmailChange(e.target.value)}
-            autoComplete="email"
-          />
-          <motion.button
-            type="button"
-            className="btn btn-accent min-w-[56px] px-0"
-            onClick={handleEmail}
-            disabled={sending || !email.trim()}
-            whileTap={{ scale: 0.92 }}
-            aria-label="Send result to email"
-          >
-            {sent ? <CheckCircle2 className="h-5 w-5" /> : <Send className="h-5 w-5" />}
-          </motion.button>
-        </div>
-        {sent ? (
-          <p className="mt-2 text-sm font-semibold text-emerald-600">Email sent — check your inbox!</p>
-        ) : null}
-        {error ? <p className="mt-2 text-sm text-red-700">{error}</p> : null}
       </motion.div>
-
-      <div className="my-4 flex items-center gap-3">
-        <span className="h-px flex-1 bg-line" />
-        <span className="text-xs font-bold uppercase tracking-wide text-muted">
-          or Scan QR Code
-        </span>
-        <span className="h-px flex-1 bg-line" />
-      </div>
-
-      {/* QR panel */}
-      <motion.div
-        className="grid place-items-center gap-2.5 rounded-2xl border border-line bg-white p-5 shadow-sm"
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.12 }}
-      >
-        <motion.div
-          className="rounded-2xl border-4 border-accent-soft p-3"
-          animate={{ scale: [1, 1.02, 1] }}
-          transition={{ duration: 2.4, repeat: Infinity }}
-        >
-          <QRCodeSVG value={resultUrl} size={168} />
-        </motion.div>
-        <span className="flex items-center gap-1.5 text-sm font-semibold text-muted">
-          <QrCode className="h-4 w-4" />
-          Scan with your phone to download your result
-        </span>
-      </motion.div>
-
-      <button type="button" className="btn btn-ghost mt-3 w-full" onClick={onSkip}>
-        Skip &amp; Finish
-      </button>
     </section>
   );
 }

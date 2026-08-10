@@ -1,10 +1,15 @@
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import {
   BACKGROUND_SCENES,
   BACKGROUND_SRC,
+  FACE_ON_MODEL,
   GARMENT_BASE_SRC,
-  HEAD_ANCHOR,
+  GARMENT_ON_MODEL,
+  MODEL_SRC,
+  modelGenderFromProfile,
   type GarmentKey,
+  type ModelGender,
 } from '../../data/garments';
 import type { FaceRegion } from '../lib/types';
 
@@ -15,7 +20,18 @@ interface LookComposerProps {
   fabricHex: string;
   backgroundId: string;
   designName?: string;
+  gender?: string | null;
   className?: string;
+}
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
 }
 
 function smoothstep(edge0: number, edge1: number, x: number): number {
@@ -23,7 +39,6 @@ function smoothstep(edge0: number, edge1: number, x: number): number {
   return t * t * (3 - 2 * t);
 }
 
-/** Average RGB of a rectangular patch of image data */
 function patchAverage(
   data: Uint8ClampedArray,
   width: number,
@@ -48,109 +63,197 @@ function patchAverage(
   return n ? [r / n, g / n, b / n] : [128, 128, 128];
 }
 
-/**
- * Cut the visitor's head + neck out of the captured frame with the camera
- * background removed, so the face is truly transparent around the edges and
- * looks worn on the garment instead of pasted over it.
- */
-function useHeadCrop(captureDataUrl: string | null, faceBox: FaceRegion | null | undefined) {
-  const [headUrl, setHeadUrl] = useState<string | null>(null);
+/** Cut visitor face from the camera capture with background removed */
+function cropVisitorFace(
+  img: HTMLImageElement,
+  faceBox: FaceRegion | null | undefined,
+): HTMLCanvasElement {
+  const fb = faceBox ?? { x: 0.32, y: 0.12, width: 0.36, height: 0.42 };
+  const left = Math.max(0, (fb.x - fb.width * 0.25) * img.width);
+  const top = Math.max(0, (fb.y - fb.height * 0.5) * img.height);
+  const right = Math.min(img.width, (fb.x + fb.width * 1.25) * img.width);
+  const bottom = Math.min(img.height, (fb.y + fb.height * 1.35) * img.height);
+  const sw = right - left;
+  const sh = bottom - top;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 420;
+  canvas.height = Math.max(1, Math.round((420 * sh) / sw));
+  const ctx = canvas.getContext('2d')!;
+  ctx.drawImage(img, left, top, sw, sh, 0, 0, canvas.width, canvas.height);
+
+  const W = canvas.width;
+  const H = canvas.height;
+  const frame = ctx.getImageData(0, 0, W, H);
+  const px = frame.data;
+  const bgL = patchAverage(px, W, 2, 2, Math.round(W * 0.14), Math.round(H * 0.18));
+  const bgR = patchAverage(px, W, Math.round(W * 0.86), 2, W - 2, Math.round(H * 0.18));
+  const skin = patchAverage(px, W, Math.round(W * 0.35), Math.round(H * 0.3), Math.round(W * 0.65), Math.round(H * 0.55));
+
+  for (let y = 0; y < H; y += 1) {
+    for (let x = 0; x < W; x += 1) {
+      const i = (y * W + x) * 4;
+      const r = px[i];
+      const g = px[i + 1];
+      const b = px[i + 2];
+      const dBg = Math.min(
+        Math.abs(r - bgL[0]) + Math.abs(g - bgL[1]) + Math.abs(b - bgL[2]),
+        Math.abs(r - bgR[0]) + Math.abs(g - bgR[1]) + Math.abs(b - bgR[2]),
+      );
+      const dSkin = Math.abs(r - skin[0]) + Math.abs(g - skin[1]) + Math.abs(b - skin[2]);
+      const keep = Math.max(smoothstep(28, 78, dBg), 1 - smoothstep(50, 125, dSkin));
+      const nx = (x - W * 0.5) / (W * 0.48);
+      const ny = (y - H * 0.42) / (H * 0.5);
+      const ellipse = 1 - smoothstep(0.85, 1, Math.sqrt(nx * nx + ny * ny));
+      px[i + 3] = Math.round(px[i + 3] * keep * ellipse);
+    }
+  }
+  ctx.putImageData(frame, 0, 0);
+  return canvas;
+}
+
+/** Tint a garment base PNG to the selected fabric color */
+function tintGarment(garmentImg: HTMLImageElement, fabricHex: string): HTMLCanvasElement {
+  const c = document.createElement('canvas');
+  c.width = garmentImg.width;
+  c.height = garmentImg.height;
+  const ctx = c.getContext('2d')!;
+  ctx.drawImage(garmentImg, 0, 0);
+  ctx.globalCompositeOperation = 'multiply';
+  ctx.fillStyle = fabricHex;
+  ctx.fillRect(0, 0, c.width, c.height);
+  ctx.globalCompositeOperation = 'destination-in';
+  ctx.drawImage(garmentImg, 0, 0);
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.globalAlpha = 0.28;
+  ctx.drawImage(garmentImg, 0, 0);
+  ctx.globalAlpha = 1;
+  return c;
+}
+
+/** Build one photoreal try-on: background + standing model + tinted garment + visitor face */
+function composeTryOn(
+  bg: HTMLImageElement,
+  model: HTMLImageElement,
+  garmentTinted: HTMLCanvasElement,
+  faceCrop: HTMLCanvasElement | null,
+  garmentKey: GarmentKey,
+  modelGender: ModelGender,
+): string {
+  const W = 720;
+  const H = 900;
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d')!;
+
+  // Background — cover crop
+  const bgScale = Math.max(W / bg.width, H / bg.height);
+  const bw = bg.width * bgScale;
+  const bh = bg.height * bgScale;
+  ctx.drawImage(bg, (W - bw) / 2, (H - bh) / 2, bw, bh);
+
+  // Soft vignette
+  const vig = ctx.createRadialGradient(W / 2, H * 0.45, H * 0.2, W / 2, H * 0.45, H * 0.75);
+  vig.addColorStop(0, 'rgba(0,0,0,0)');
+  vig.addColorStop(1, 'rgba(0,0,0,0.22)');
+  ctx.fillStyle = vig;
+  ctx.fillRect(0, 0, W, H);
+
+  // Full-body model — standing, hands visible
+  const modelH = H * 0.9;
+  const modelW = modelH * (model.width / model.height);
+  const modelX = (W - modelW) / 2;
+  const modelY = H - modelH;
+
+  // Ground shadow
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,0.18)';
+  ctx.beginPath();
+  ctx.ellipse(W / 2, H - 8, modelW * 0.28, 14, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.drawImage(model, modelX, modelY, modelW, modelH);
+
+  // Tinted garment on the model torso
+  const gSpec = GARMENT_ON_MODEL[garmentKey] || GARMENT_ON_MODEL.polo;
+  const gW = modelW * gSpec.width;
+  const gH = gW * (garmentTinted.height / garmentTinted.width);
+  const gX = modelX + (modelW - gW) / 2;
+  const gY = modelY + modelH * gSpec.top;
+  ctx.drawImage(garmentTinted, gX, gY, gW, gH);
+
+  // Visitor face on the model head — covers the stock model face
+  if (faceCrop) {
+    const fSpec = FACE_ON_MODEL[modelGender];
+    const fW = modelW * fSpec.width;
+    const fH = fW * (faceCrop.height / faceCrop.width);
+    const fX = modelX + (modelW - fW) / 2;
+    const fY = modelY + modelH * fSpec.top;
+
+    // Soft oval mask so the face blends into the model neck
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(fX + fW / 2, fY + fH * 0.46, fW * 0.46, fH * 0.48, 0, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.drawImage(faceCrop, fX, fY, fW, fH);
+    ctx.restore();
+  }
+
+  return canvas.toDataURL('image/jpeg', 0.92);
+}
+
+function useTryOnImage(
+  captureDataUrl: string | null,
+  faceBox: FaceRegion | null | undefined,
+  garmentKey: GarmentKey,
+  fabricHex: string,
+  backgroundId: string,
+  gender: string | null | undefined,
+) {
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!captureDataUrl) {
-      setHeadUrl(null);
-      return;
-    }
     let cancelled = false;
-    const img = new Image();
-    img.onload = () => {
-      if (cancelled) return;
-      // Fall back to a centered guess when no face box was stored
-      const fb = faceBox ?? { x: 0.32, y: 0.12, width: 0.36, height: 0.42 };
+    setLoading(true);
 
-      // Crop window: hair above the face box, neck below it
-      const left = Math.max(0, (fb.x - fb.width * 0.3) * img.width);
-      const top = Math.max(0, (fb.y - fb.height * 0.45) * img.height);
-      const right = Math.min(img.width, (fb.x + fb.width * 1.3) * img.width);
-      const bottom = Math.min(img.height, (fb.y + fb.height * 1.5) * img.height);
-      const sw = right - left;
-      const sh = bottom - top;
-      if (sw <= 0 || sh <= 0) return;
+    const modelGender = modelGenderFromProfile(gender);
+    const bgSrc = BACKGROUND_SRC[backgroundId] || BACKGROUND_SRC.studio;
+    const garmentSrc = GARMENT_BASE_SRC[garmentKey];
+    const modelSrc = MODEL_SRC[modelGender];
 
-      const size = 480;
-      const canvas = document.createElement('canvas');
-      canvas.width = size;
-      canvas.height = Math.round((size * sh) / sw);
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      ctx.drawImage(img, left, top, sw, sh, 0, 0, canvas.width, canvas.height);
-
-      const W = canvas.width;
-      const H = canvas.height;
-      const frame = ctx.getImageData(0, 0, W, H);
-      const px = frame.data;
-
-      // Estimate the camera background from the top corners of the crop
-      const bgL = patchAverage(px, W, 2, 2, Math.round(W * 0.14), Math.round(H * 0.2));
-      const bgR = patchAverage(px, W, Math.round(W * 0.86), 2, W - 2, Math.round(H * 0.2));
-      // Estimate the visitor's skin from the center of the face
-      const skin = patchAverage(
-        px,
-        W,
-        Math.round(W * 0.38),
-        Math.round(H * 0.34),
-        Math.round(W * 0.62),
-        Math.round(H * 0.52),
-      );
-
-      // Feathered ellipse around head + neck, then color-based background removal
-      const ecx = W * 0.5;
-      const ecy = H * 0.4;
-      const erx = W * 0.5;
-      const ery = H * 0.52;
-
-      for (let y = 0; y < H; y += 1) {
-        for (let x = 0; x < W; x += 1) {
-          const i = (y * W + x) * 4;
-          const r = px[i];
-          const g = px[i + 1];
-          const b = px[i + 2];
-
-          const dBgL = Math.abs(r - bgL[0]) + Math.abs(g - bgL[1]) + Math.abs(b - bgL[2]);
-          const dBgR = Math.abs(r - bgR[0]) + Math.abs(g - bgR[1]) + Math.abs(b - bgR[2]);
-          const dBg = Math.min(dBgL, dBgR);
-          const dSkin = Math.abs(r - skin[0]) + Math.abs(g - skin[1]) + Math.abs(b - skin[2]);
-
-          // Away from background color → keep; close to skin → always keep
-          const keepColor = smoothstep(28, 80, dBg);
-          const keepSkin = 1 - smoothstep(55, 130, dSkin);
-          const keep = Math.max(keepColor, keepSkin);
-
-          // Feathered ellipse bound so stray far pixels never survive
-          const nx = (x - ecx) / erx;
-          const ny = (y - ecy) / ery;
-          const rad = Math.sqrt(nx * nx + ny * ny);
-          const ellipse = 1 - smoothstep(0.82, 1, rad);
-
-          px[i + 3] = Math.round(px[i + 3] * keep * ellipse);
+    Promise.all([loadImage(bgSrc), loadImage(modelSrc), loadImage(garmentSrc)])
+      .then(async ([bg, model, garmentBase]) => {
+        if (cancelled) return;
+        let faceCrop: HTMLCanvasElement | null = null;
+        if (captureDataUrl) {
+          const capture = await loadImage(captureDataUrl);
+          faceCrop = cropVisitorFace(capture, faceBox);
         }
-      }
+        const tinted = tintGarment(garmentBase, fabricHex);
+        const url = composeTryOn(bg, model, tinted, faceCrop, garmentKey, modelGender);
+        if (!cancelled) {
+          setImageUrl(url);
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setLoading(false);
+      });
 
-      ctx.putImageData(frame, 0, 0);
-      setHeadUrl(canvas.toDataURL('image/png'));
-    };
-    img.src = captureDataUrl;
     return () => {
       cancelled = true;
     };
-  }, [captureDataUrl, faceBox]);
+  }, [captureDataUrl, faceBox, garmentKey, fabricHex, backgroundId, gender]);
 
-  return headUrl;
+  return { imageUrl, loading };
 }
 
 /**
- * Try-on composer: real photo scene + cutout garment recolored to the
- * selected fabric + the visitor's own head sitting on the collar.
+ * AI try-on preview: full-body standing model wearing the selected garment
+ * in the chosen scene, with the visitor's own face blended on naturally.
  */
 export function LookComposer({
   captureDataUrl,
@@ -159,86 +262,48 @@ export function LookComposer({
   fabricHex,
   backgroundId,
   designName,
+  gender,
   className = '',
 }: LookComposerProps) {
   const scene = BACKGROUND_SCENES[backgroundId] || BACKGROUND_SCENES.studio;
-  const sceneSrc = BACKGROUND_SRC[backgroundId] || BACKGROUND_SRC.studio;
-  const garmentSrc = GARMENT_BASE_SRC[garmentKey];
-  const anchor = HEAD_ANCHOR[garmentKey] || HEAD_ANCHOR.polo;
-  const headUrl = useHeadCrop(captureDataUrl, faceBox);
-
-  const garmentMask: React.CSSProperties = {
-    WebkitMaskImage: `url(${garmentSrc})`,
-    maskImage: `url(${garmentSrc})`,
-    WebkitMaskSize: 'contain',
-    maskSize: 'contain',
-    WebkitMaskRepeat: 'no-repeat',
-    maskRepeat: 'no-repeat',
-    WebkitMaskPosition: 'center bottom',
-    maskPosition: 'center bottom',
-  };
+  const { imageUrl, loading } = useTryOnImage(
+    captureDataUrl,
+    faceBox,
+    garmentKey,
+    fabricHex,
+    backgroundId,
+    gender,
+  );
 
   return (
     <div className={`relative min-h-[420px] overflow-hidden rounded-3xl shadow-kiosk ${className}`}>
-      {/* Real photo environment */}
-      <img
-        src={sceneSrc}
-        alt={scene.label}
-        className="absolute inset-0 h-full w-full object-cover"
-        draggable={false}
-      />
-      {/* Gentle darkening at the bottom to ground the subject */}
-      <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/25 to-transparent" />
-
-      {/* Soft contact shadow behind the person */}
-      <div className="absolute bottom-[-4%] left-1/2 z-[1] h-[70%] w-[80%] -translate-x-1/2 rounded-[45%] bg-black/25 blur-2xl" />
-
-      {/* Garment — real cutout photo, tinted to the selected fabric */}
-      <div className="absolute bottom-[-3%] left-1/2 z-[2] h-[68%] w-[86%] -translate-x-1/2">
-        <img
-          src={garmentSrc}
-          alt={designName || 'Selected garment'}
-          className="h-full w-full object-contain object-bottom"
-          draggable={false}
-        />
-        {/* Fabric color applied only on garment pixels via alpha mask */}
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{ ...garmentMask, background: fabricHex, mixBlendMode: 'multiply' }}
-          aria-hidden
-        />
-        {/* Restore highlights so folds stay visible on dark fabrics */}
-        <img
-          src={garmentSrc}
-          alt=""
-          aria-hidden
-          className="pointer-events-none absolute inset-0 h-full w-full object-contain object-bottom opacity-30"
-          style={{ mixBlendMode: 'soft-light' }}
-          draggable={false}
-        />
-      </div>
-
-      {/* Visitor's head + neck — background removed so it reads as truly worn.
-          Rendered behind the garment so the neck tucks into the collar. */}
-      {headUrl ? (
-        <img
-          src={headUrl}
-          alt="Your face"
-          className="absolute left-1/2 z-[1] -translate-x-1/2"
-          style={{
-            bottom: `${anchor.bottom - 6}%`,
-            width: `${anchor.width}%`,
-            filter: 'drop-shadow(0 8px 14px rgba(11,31,58,0.3))',
-          }}
+      {loading ? (
+        <div className="absolute inset-0 grid place-items-center bg-gradient-to-br from-slate-100 to-slate-200">
+          <motion.div
+            className="flex flex-col items-center gap-3"
+            animate={{ opacity: [0.5, 1, 0.5] }}
+            transition={{ duration: 1.4, repeat: Infinity }}
+          >
+            <div className="h-12 w-12 rounded-full border-4 border-accent border-t-transparent animate-spin" />
+            <span className="text-sm font-bold text-muted">AI is composing your look…</span>
+          </motion.div>
+        </div>
+      ) : imageUrl ? (
+        <motion.img
+          src={imageUrl}
+          alt="Your try-on preview"
+          className="h-full w-full object-cover"
+          initial={{ opacity: 0, scale: 1.03 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.55, ease: 'easeOut' }}
           draggable={false}
         />
       ) : (
-        <div className="absolute bottom-[60%] left-1/2 z-[3] grid aspect-square w-[34%] -translate-x-1/2 place-items-center rounded-full bg-slate-200/80 text-xs font-bold text-muted">
-          Face capture
+        <div className="absolute inset-0 grid place-items-center bg-slate-100 text-sm font-bold text-muted">
+          Preview unavailable
         </div>
       )}
 
-      {/* Labels */}
       <div className="absolute left-3 top-3 z-[4] rounded-full bg-white/90 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-navy shadow-sm">
         {scene.label}
       </div>
@@ -246,6 +311,17 @@ export function LookComposer({
         <div className="absolute bottom-3 left-1/2 z-[4] max-w-[90%] -translate-x-1/2 truncate rounded-full bg-navy/90 px-3 py-1.5 text-center text-[11px] font-bold text-white shadow">
           {designName}
         </div>
+      ) : null}
+
+      {/* Subtle AI scan shimmer */}
+      {!loading && imageUrl ? (
+        <motion.div
+          className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent"
+          initial={{ x: '-100%' }}
+          animate={{ x: '200%' }}
+          transition={{ duration: 2.2, repeat: Infinity, repeatDelay: 4, ease: 'easeInOut' }}
+          aria-hidden
+        />
       ) : null}
     </div>
   );

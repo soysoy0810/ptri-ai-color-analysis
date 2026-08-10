@@ -67,7 +67,10 @@ class SessionController extends Controller
             'email' => 'required|email|max:180',
         ]);
 
-        KioskSession::findOrFail($id);
+        $session = KioskSession::findOrFail($id);
+
+        // Keep the visitor email on the session record for the admin panel
+        $session->update(['email' => $data['email']]);
 
         DB::table('email_queue')->insert([
             'session_id' => $id,

@@ -16,27 +16,26 @@ export function ChooseTopScreen({
   onModeChange,
   onToggleColor,
 }: ChooseTopScreenProps) {
-  const limit = mode === 'top5' ? 5 : mode === 'top10' ? 10 : 8;
-  const canEdit = true;
+  const limit = mode === 'top10' ? 10 : 5;
 
   return (
     <section className="screen">
-      <h1 className="screen-title">Choose Your Top</h1>
-      <p className="screen-sub">Select Top 5, Top 10, or Custom colors you love most.</p>
+      <h1 className="screen-title">Select the colors you love most.</h1>
 
-      <div className="mb-4 grid grid-cols-3 gap-1.5 rounded-2xl bg-accent-soft p-1.5">
+      <div className="mb-4 grid grid-cols-2 gap-2 rounded-2xl bg-accent-soft p-1.5">
         {(
           [
-            { id: 'top5', label: 'TOP 5' },
-            { id: 'top10', label: 'TOP 10' },
-            { id: 'custom', label: 'CUSTOM' },
-          ] as const
+            { id: 'top5' as const, label: 'TOP 5' },
+            { id: 'top10' as const, label: 'TOP 10' },
+          ]
         ).map((tab) => (
           <button
             key={tab.id}
             type="button"
             className={`min-h-touch rounded-xl text-sm font-extrabold ${
-              mode === tab.id ? 'bg-navy text-white shadow-sm' : 'bg-transparent text-navy'
+              mode === tab.id || (mode === 'custom' && tab.id === 'top5')
+                ? 'bg-navy text-white shadow-sm'
+                : 'bg-transparent text-navy'
             }`}
             onClick={() => onModeChange(tab.id)}
           >
@@ -46,20 +45,22 @@ export function ChooseTopScreen({
       </div>
 
       <div className="grid grid-cols-4 gap-2.5">
-        {colors.map((color) => {
+        {colors.slice(0, 20).map((color) => {
           const active = selectedColors.some((c) => c.id === color.id);
           return (
             <button
               key={color.id}
               type="button"
-              className={`swatch ${active ? 'active' : ''}`}
+              className={`relative aspect-square rounded-xl shadow-[inset_0_0_0_1px_rgba(0,0,0,0.08)] ${
+                active ? 'outline outline-[3px] outline-accent outline-offset-2' : ''
+              }`}
               style={{ background: color.hex }}
-              onClick={() => canEdit && onToggleColor(color, limit)}
+              onClick={() => onToggleColor(color, limit)}
               aria-label={color.name}
             >
               {active ? (
-                <span className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-accent text-white">
-                  <Check className="h-3 w-3" strokeWidth={3} />
+                <span className="absolute right-1.5 top-1.5 grid h-6 w-6 place-items-center rounded-full bg-accent text-white shadow">
+                  <Check className="h-3.5 w-3.5" strokeWidth={3} />
                 </span>
               ) : null}
             </button>

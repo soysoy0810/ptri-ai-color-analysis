@@ -3,14 +3,11 @@
 ## Setup (all developers)
 
 ```bash
-cd /Applications/XAMPP/xamppfiles/htdocs/ptri-ai-kiosk
+cd /Applications/XAMPP/xamppfiles/htdocs/ptri-AI-color-analysis
 cp .env.example .env
 
-# 1) Database (SQLite by default — no MySQL required)
-php scripts/db_migrate.php
-
-# Optional MySQL (start MySQL in XAMPP first)
-# DB_DRIVER=mysql php scripts/db_migrate.php --driver=mysql
+# 1) Backend (Laravel)
+cd backend && php artisan migrate --seed && cd ..
 
 # 2) AI service
 ./scripts/start-ai.sh
@@ -22,7 +19,7 @@ php scripts/db_migrate.php
 ## Folder map
 
 ```
-ptri-ai-kiosk/
+ptri-AI-color-analysis/
 ├── frontend/          # React kiosk UI
 ├── backend/           # PHP API (Controllers / Services / Repositories)
 ├── ai-service/        # Python FastAPI AI

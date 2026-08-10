@@ -1,7 +1,7 @@
 import {
   BriefcaseBusiness,
   Dumbbell,
-  Scissors,
+  Layers,
   Shirt,
   Sparkles,
   StretchHorizontal,
@@ -19,7 +19,7 @@ const ICONS: Record<string, typeof Shirt> = {
   smart_casual: Sparkles,
   formal: BriefcaseBusiness,
   active: Dumbbell,
-  fabrics: Scissors,
+  fabrics: Layers,
 };
 
 export function CategoryScreen({ selectedId, onSelect }: CategoryScreenProps) {
@@ -31,20 +31,23 @@ export function CategoryScreen({ selectedId, onSelect }: CategoryScreenProps) {
       <div className="grid grid-cols-2 gap-3">
         {CATEGORIES.map((cat) => {
           const Icon = ICONS[cat.id] || Shirt;
+          const active = selectedId === cat.id;
           return (
             <button
               key={cat.id}
               type="button"
-              className={`tile min-h-[120px] ${selectedId === cat.id ? 'active' : ''}`}
               onClick={() => onSelect(cat.id)}
+              className={`flex min-h-[132px] flex-col items-start rounded-2xl border-2 bg-white p-4 text-left transition active:scale-[0.985] ${
+                active ? 'border-accent shadow-[0_0_0_3px_rgba(47,128,237,0.15)]' : 'border-line'
+              }`}
             >
-              <span className="mb-3 grid h-11 w-11 place-items-center rounded-xl bg-accent-soft text-navy">
-                <Icon className="h-5 w-5" />
+              <span className="mb-3 grid h-12 w-12 place-items-center rounded-xl border border-line text-navy">
+                <Icon className="h-6 w-6" strokeWidth={1.75} />
               </span>
-              <strong className="block text-sm font-extrabold uppercase tracking-wide text-navy">
+              <strong className="text-[13px] font-extrabold uppercase tracking-wide text-navy">
                 {cat.label}
               </strong>
-              <span className="mt-1 block text-xs text-muted">{cat.description}</span>
+              <span className="mt-1 text-xs font-medium text-muted">{cat.description}</span>
             </button>
           );
         })}

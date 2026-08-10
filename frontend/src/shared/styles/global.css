@@ -48,7 +48,7 @@ button:disabled {
 
 @layer components {
   .kiosk-shell {
-    @apply relative mx-auto flex h-full w-full max-w-kiosk flex-col overflow-hidden bg-white/80 shadow-kiosk backdrop-blur-md;
+    @apply relative mx-auto flex h-full w-full max-w-kiosk flex-col overflow-hidden bg-white shadow-kiosk;
   }
 
   .screen {

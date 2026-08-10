@@ -19,30 +19,28 @@ export function CameraGuideScreen({ onContinue }: CameraGuideScreenProps) {
 
   return (
     <section className="screen">
-      <h1 className="screen-title">Camera Guide</h1>
-      <p className="screen-sub">Position your face within the frame</p>
+      <h1 className="screen-title text-center">Position your face within the frame</h1>
 
-      <CameraFrame videoRef={videoRef} error={error} />
+      <div className="mt-2">
+        <CameraFrame videoRef={videoRef} error={error} className="mx-auto max-w-[340px]" />
+      </div>
 
-      <div className="mt-4 grid grid-cols-4 gap-2">
+      <div className="mt-5 grid grid-cols-4 gap-2">
         {CAMERA_GUIDE.map((item) => {
           const Icon = GUIDE_ICONS[item.id];
           return (
-            <div
-              key={item.id}
-              className="flex flex-col items-center gap-1.5 rounded-2xl bg-accent-soft px-1 py-3 text-center"
-            >
-              <span className="grid h-10 w-10 place-items-center rounded-full bg-white text-navy shadow-sm">
-                <Icon className="h-4 w-4" />
+            <div key={item.id} className="flex flex-col items-center gap-2 text-center">
+              <span className="grid h-14 w-14 place-items-center rounded-2xl border border-line bg-white text-navy shadow-sm">
+                <Icon className="h-5 w-5" />
               </span>
-              <span className="text-[10px] font-bold leading-tight text-navy">{item.label}</span>
+              <span className="text-[11px] font-bold leading-tight text-navy">{item.label}</span>
             </div>
           );
         })}
       </div>
 
-      <button type="button" className="btn btn-primary mt-5 w-full" onClick={onContinue}>
-        I&apos;M READY
+      <button type="button" className="btn btn-primary mt-6 w-full" onClick={onContinue}>
+        CONTINUE
       </button>
     </section>
   );

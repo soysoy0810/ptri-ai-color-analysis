@@ -147,12 +147,8 @@ export default function App() {
   }
 
   const hideChrome = state.step === 'welcome' || state.step === 'thanks';
-  const limit =
-    state.selectionMode === 'top5' ? 5 : state.selectionMode === 'top10' ? 10 : 8;
-  const chooseReady =
-    state.selectionMode === 'custom'
-      ? state.selectedColors.length >= 1
-      : state.selectedColors.length === limit;
+  const limit = state.selectionMode === 'top10' ? 10 : 5;
+  const chooseReady = state.selectedColors.length === limit;
 
   let body: ReactNode = null;
   let footer: ReactNode = null;

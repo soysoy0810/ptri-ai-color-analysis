@@ -31,68 +31,83 @@ export function PreviewScreen({
   return (
     <section className="screen">
       <h1 className="screen-title">Preview Your Look</h1>
-      <p className="screen-sub">Your selections with a live preview of fabric color and face.</p>
 
-      <div className="grid grid-cols-[1fr_1.15fr] gap-3">
-        <div className="flex flex-col gap-3">
-          <div className="rounded-2xl border border-line bg-white p-3.5">
-            <h2 className="mb-2 text-[11px] font-extrabold uppercase tracking-wide text-muted">
-              Your Selections
-            </h2>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between gap-2">
-                <span className="text-muted">Category</span>
-                <strong className="text-right text-navy">{category?.label || '—'}</strong>
-              </div>
-              <div className="flex justify-between gap-2">
-                <span className="text-muted">Design</span>
-                <strong className="text-right text-navy">{design?.name || '—'}</strong>
-              </div>
-              <div className="flex justify-between gap-2">
-                <span className="text-muted">Fabric</span>
-                <strong className="text-right text-navy">{fabric?.name || '—'}</strong>
-              </div>
+      <div className="mt-1 grid grid-cols-1 gap-3">
+        {/* Visual preview (dominant, like board right panel) */}
+        <div className="relative min-h-[300px] overflow-hidden rounded-3xl shadow-kiosk">
+          <div
+            className="absolute inset-0"
+            style={{
+              background: `linear-gradient(165deg, ${bg.tone} 0%, #dbe4ee 45%, #f8fafc 100%)`,
+            }}
+          />
+          {/* Garment body */}
+          <div
+            className="absolute bottom-[6%] left-1/2 h-[52%] w-[62%] -translate-x-1/2 rounded-[22px_22px_46%_46%] shadow-xl"
+            style={{ background: garmentColor }}
+          >
+            <div className="absolute left-1/2 top-3 -translate-x-1/2 text-[10px] font-extrabold tracking-[0.2em] text-white/80">
+              PTRI
             </div>
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {selectedColors.slice(0, 5).map((c) => (
+          </div>
+          {captureDataUrl ? (
+            <img
+              src={captureDataUrl}
+              alt="Your face preview"
+              className="absolute left-1/2 top-[10%] aspect-square w-[44%] -translate-x-1/2 rounded-full border-4 border-white object-cover shadow-lg"
+            />
+          ) : (
+            <div className="absolute left-1/2 top-[10%] aspect-square w-[44%] -translate-x-1/2 rounded-full border-4 border-white bg-slate-300 shadow-lg" />
+          )}
+        </div>
+
+        {/* Selections summary */}
+        <div className="rounded-2xl border border-line bg-white p-4">
+          <h2 className="mb-3 text-[11px] font-extrabold uppercase tracking-wide text-muted">
+            Your Selections
+          </h2>
+          <div className="space-y-2 text-sm">
+            <Row label="Category" value={category?.label || '—'} />
+            <Row label="Design" value={design ? `${design.name}` : '—'} />
+            <Row label="Fabric" value={fabric ? `${fabric.code} ${fabric.name}` : '—'} />
+          </div>
+          <div className="mt-3">
+            <div className="mb-1.5 text-[11px] font-bold uppercase text-muted">Top Colors</div>
+            <div className="flex flex-wrap gap-1.5">
+              {selectedColors.slice(0, 6).map((c) => (
                 <span
                   key={c.id}
-                  className="h-6 w-6 rounded-full border border-black/10"
+                  className="h-7 w-7 rounded-full border border-black/10"
                   style={{ background: c.hex }}
                   title={c.name}
                 />
               ))}
             </div>
           </div>
+        </div>
 
-          <button type="button" className="btn btn-secondary w-full text-xs" onClick={onChangeBackground}>
+        <div className="grid grid-cols-2 gap-2">
+          <button type="button" className="btn btn-secondary text-xs" onClick={onChangeBackground}>
             CHANGE BACKGROUND
           </button>
-          <button type="button" className="btn btn-ghost w-full border border-line text-xs" onClick={onViewDetails}>
+          <button
+            type="button"
+            className="btn border border-line bg-white text-xs text-navy"
+            onClick={onViewDetails}
+          >
             VIEW DETAILS
           </button>
         </div>
-
-        <div className="relative min-h-[340px] overflow-hidden rounded-3xl shadow-kiosk">
-          <div
-            className="absolute inset-0"
-            style={{ background: `linear-gradient(180deg, ${bg.tone}, #ffffff)` }}
-          />
-          <div
-            className="absolute bottom-[8%] left-1/2 h-[48%] w-[58%] -translate-x-1/2 rounded-[18px_18px_40%_40%] shadow-lg"
-            style={{ background: garmentColor }}
-          />
-          {captureDataUrl ? (
-            <img
-              src={captureDataUrl}
-              alt="Captured face preview"
-              className="absolute left-1/2 top-[14%] aspect-square w-[42%] -translate-x-1/2 rounded-full border-4 border-white/85 object-cover shadow-lg"
-            />
-          ) : (
-            <div className="absolute left-1/2 top-[14%] aspect-square w-[42%] -translate-x-1/2 rounded-full border-4 border-white/85 bg-slate-300" />
-          )}
-        </div>
       </div>
     </section>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-start justify-between gap-3">
+      <span className="text-muted">{label}</span>
+      <strong className="max-w-[65%] text-right text-navy">{value}</strong>
+    </div>
   );
 }

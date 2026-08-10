@@ -18,67 +18,70 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
   const { time, day } = useLiveClock();
 
   return (
-    <section className="screen relative overflow-hidden pb-2">
-      <div className="mb-4 flex items-start justify-between gap-3">
+    <section className="relative flex h-full min-h-full flex-col overflow-hidden bg-white px-5 pb-4 pt-4">
+      <header className="mb-6 flex items-start justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <div className="grid h-12 w-12 place-items-center rounded-xl bg-gradient-to-br from-navy to-accent text-[11px] font-extrabold text-white">
-            DOST
-            <span className="text-[9px] -mt-0.5">PTRI</span>
+          <div className="grid h-[52px] w-[52px] shrink-0 place-items-center rounded-[14px] bg-navy text-white">
+            <span className="text-[10px] font-extrabold leading-none">DOST</span>
+            <span className="text-[11px] font-extrabold leading-none">PTRI</span>
           </div>
           <div>
-            <strong className="block text-xs font-extrabold text-navy">DOST–PTRI</strong>
-            <span className="text-[10px] text-muted">Philippine Textile Research Institute</span>
+            <strong className="block text-[14px] font-extrabold leading-tight text-navy">DOST–PTRI</strong>
+            <span className="text-[10px] font-medium text-muted">Philippine Textile Research Institute</span>
           </div>
         </div>
         <div className="text-right">
-          <div className="text-sm font-extrabold text-navy">{time}</div>
-          <div className="text-[11px] text-muted">{day}</div>
+          <div className="text-[14px] font-extrabold text-navy">
+            {time} <span className="text-muted">|</span>
+          </div>
+          <div className="text-[11px] font-medium text-muted">{day}</div>
         </div>
-      </div>
+      </header>
 
-      <div className="relative z-[1] flex flex-1 flex-col">
-        <div className="pr-[38%]">
-          <h1 className="mb-2 text-[2.05rem] font-extrabold leading-[1.05] tracking-tight text-navy">
+      <div className="relative mb-5 min-h-[200px]">
+        <div className="relative z-[1] max-w-[58%]">
+          <h1 className="text-[2.15rem] font-extrabold uppercase leading-[1.05] tracking-tight text-navy">
             PTRI AI
             <br />
             COLOR ANALYSIS
           </h1>
-          <p className="mb-6 text-sm font-semibold text-accent">
-            Smart Colors. Perfect Style. Made for You.
-          </p>
-
-          <ul className="space-y-3">
-            {FEATURE_BULLETS.map((item) => {
-              const Icon = ICONS[item.id];
-              return (
-                <li key={item.id} className="flex items-center gap-3">
-                  <span className="grid h-10 w-10 place-items-center rounded-full bg-navy text-white">
-                    <Icon className="h-4 w-4" />
-                  </span>
-                  <span>
-                    <strong className="block text-sm font-bold text-navy">{item.title}</strong>
-                    <span className="text-xs text-muted">{item.subtitle}</span>
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-
-        <AiNetworkFace className="absolute right-[-8px] top-8 h-[240px] w-[170px] animate-[pulse-soft_2.8s_ease-in-out_infinite]" />
-
-        <div className="mt-auto pt-8">
-          <button type="button" className="btn btn-primary w-full text-base tracking-wide" onClick={onStart}>
-            TOUCH TO START
-            <ChevronRight className="h-5 w-5" />
-          </button>
-          <p className="mt-3 text-center text-xs font-semibold text-muted">
-            Empowering Textiles. Enhancing Lives.
+          <p className="mt-3 text-[0.95rem] font-semibold leading-snug text-accent">
+            Smart Colors. Perfect Style.
+            <br />
+            Made for You.
           </p>
         </div>
+        <AiNetworkFace className="pointer-events-none absolute -right-4 top-[-6px] h-[220px] w-[175px]" />
       </div>
 
-      <TrianglePattern className="absolute -bottom-2 -right-4 h-36 w-44 opacity-90" />
+      <ul className="relative z-[1] space-y-4">
+        {FEATURE_BULLETS.map((item) => {
+          const Icon = ICONS[item.id];
+          return (
+            <li key={item.id} className="flex items-center gap-3">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-navy text-white">
+                <Icon className="h-4 w-4" strokeWidth={2.4} />
+              </span>
+              <strong className="text-[1rem] font-extrabold text-navy">{item.title}</strong>
+            </li>
+          );
+        })}
+      </ul>
+
+      <div className="relative mt-auto pt-8">
+        <TrianglePattern className="absolute bottom-6 -right-3 h-36 w-48" />
+        <button
+          type="button"
+          onClick={onStart}
+          className="relative z-[2] flex min-h-[56px] w-full items-center justify-center gap-2 rounded-2xl bg-navy text-[1.02rem] font-extrabold tracking-wide text-white shadow-[0_12px_28px_rgba(11,31,58,0.28)] active:scale-[0.985]"
+        >
+          TOUCH TO START
+          <ChevronRight className="h-5 w-5" strokeWidth={2.6} />
+        </button>
+        <p className="relative z-[2] mt-3 text-center text-[11px] font-semibold text-muted">
+          Empowering Textiles. Enhancing Lives.
+        </p>
+      </div>
     </section>
   );
 }

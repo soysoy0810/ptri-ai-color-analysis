@@ -31,12 +31,14 @@ export const CATEGORIES = categories as CategoryItem[];
 export const FABRICS = fabrics as FabricItem[];
 export const BACKGROUNDS = backgrounds as BackgroundItem[];
 
-export const DESIGNS = (designs as Array<{
-  id: string;
-  category_id: string;
-  name: string;
-  style_code: string;
-}>).reduce<Record<string, DesignItem[]>>((acc, design) => {
+export const DESIGNS = (
+  designs as Array<{
+    id: string;
+    category_id: string;
+    name: string;
+    style_code: string;
+  }>
+).reduce<Record<string, DesignItem[]>>((acc, design) => {
   if (!acc[design.category_id]) acc[design.category_id] = [];
   acc[design.category_id].push({
     id: design.id,
@@ -62,8 +64,9 @@ export const CAMERA_GUIDE = [
   { id: 'light', label: 'Good lighting', tip: 'Stand in even lighting' },
 ] as const;
 
+/** Full phrases as shown on the approved PTRI home mockup */
 export const FEATURE_BULLETS = [
-  { id: 'ai', title: 'AI-Powered', subtitle: 'Color Analysis' },
-  { id: 'textiles', title: 'PTRI Textiles', subtitle: '& Innovation' },
-  { id: 'personal', title: 'Personalized', subtitle: 'Recommendations' },
+  { id: 'ai', title: 'AI-Powered Color Analysis' },
+  { id: 'textiles', title: 'PTRI Textiles & Innovation' },
+  { id: 'personal', title: 'Personalized Recommendations' },
 ] as const;

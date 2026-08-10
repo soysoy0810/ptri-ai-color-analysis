@@ -25,7 +25,7 @@ Run everything on the kiosk mini-PC:
 
 1. Create a dedicated Windows user `ptri-kiosk`
 2. Set Edge/Chrome to open on login:
-   - Edge: `--kiosk http://127.0.0.1:5173` (dev) or `http://127.0.0.1/ptri-ai-kiosk/frontend/dist/`
+   - Edge: `--kiosk http://127.0.0.1:5173` (dev) or `http://127.0.0.1/ptri-AI-color-analysis/frontend/dist/`
    - Chrome: same `--kiosk` flag
 3. Disable gestures that exit kiosk where possible
 4. Auto-start Laravel + AI via Task Scheduler / NSSM services

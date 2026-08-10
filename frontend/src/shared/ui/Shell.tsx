@@ -54,7 +54,9 @@ export function Shell({
         </header>
       ) : null}
 
-      <main className="flex-1 overflow-auto px-5 pb-5 pt-2">{children}</main>
+      <main className={`flex-1 overflow-auto ${showHeader ? 'px-5 pb-5 pt-2' : 'p-0'}`}>
+        {children}
+      </main>
 
       {footer ? (
         <footer className="flex items-center gap-2.5 border-t border-line/80 bg-white/90 px-5 pb-[calc(16px+var(--safe-bottom))] pt-3">

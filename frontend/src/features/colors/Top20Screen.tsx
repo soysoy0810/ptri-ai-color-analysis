@@ -1,4 +1,4 @@
-import { Sparkles } from 'lucide-react';
+import { Star } from 'lucide-react';
 import type { PaletteColor } from '../../shared/lib/types';
 
 interface Top20ScreenProps {
@@ -9,26 +9,25 @@ interface Top20ScreenProps {
 export function Top20Screen({ colors, onSuggestTop5 }: Top20ScreenProps) {
   return (
     <section className="screen">
-      <h1 className="screen-title">Your Top 20 Colors</h1>
-      <p className="screen-sub">These are 20 colors that suit you best.</p>
+      <h1 className="screen-title">These are 20 colors that suit you best.</h1>
 
-      <div className="grid grid-cols-4 gap-2.5">
-        {colors.map((color, i) => (
+      <div className="mt-2 grid grid-cols-4 gap-2.5">
+        {colors.slice(0, 20).map((color) => (
           <div
             key={color.id}
-            className="swatch"
+            className="aspect-square rounded-xl shadow-[inset_0_0_0_1px_rgba(0,0,0,0.08)]"
             style={{ background: color.hex }}
             title={color.name}
-          >
-            <span className="absolute left-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full bg-white/95 text-[10px] font-extrabold text-navy">
-              {i + 1}
-            </span>
-          </div>
+          />
         ))}
       </div>
 
-      <button type="button" className="btn btn-accent mt-5 w-full" onClick={onSuggestTop5}>
-        <Sparkles className="h-4 w-4" />
+      <button
+        type="button"
+        className="btn mt-5 w-full border-2 border-accent bg-white text-accent hover:bg-accent-soft"
+        onClick={onSuggestTop5}
+      >
+        <Star className="h-4 w-4 fill-accent" />
         AI SUGGESTS TOP 5 COLORS FOR YOU
       </button>
     </section>

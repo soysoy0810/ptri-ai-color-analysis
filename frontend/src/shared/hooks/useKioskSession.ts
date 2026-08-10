@@ -3,16 +3,13 @@ import { matchFabrics } from '../lib/colorEngine';
 import type { SessionAction, SessionState, StepId } from '../lib/types';
 
 /**
- * Exact 15-step flow from PTRI System Guide Section A — How It Works.
- * 1 HOME → 2 CAMERA GUIDE → 3 LIGHTING CHECK → 4 LIVE SCAN → 5 AI ANALYZING
- * → 6 TOP 20 → 7 CHOOSE TOP → 8 CATEGORY → 9 DESIGN → 10 FABRIC
- * → 11 BACKGROUND → 12 PREVIEW → 13 RECOMMENDATION → 14 GET RESULT → 15 THANK YOU
+ * PTRI kiosk flow. Camera guide + lighting + live scan are one automatic step:
+ * the visitor just stands in front of the camera and the face is detected,
+ * checked and captured with no manual action.
  */
 export const STEPS: StepId[] = [
   'welcome',
   'cameraGuide',
-  'lightingCheck',
-  'liveScan',
   'analysis',
   'top20',
   'chooseTop',
@@ -27,18 +24,16 @@ export const STEPS: StepId[] = [
 ];
 
 export const STEP_LABELS: Record<StepId, string> = {
-  welcome: 'HOME',
+  welcome: 'WELCOME',
   cameraGuide: 'CAMERA GUIDE',
-  lightingCheck: 'LIGHTING CHECK',
-  liveScan: 'LIVE SCAN',
-  analysis: 'AI ANALYZING',
-  top20: 'TOP 20 COLORS',
-  chooseTop: 'CHOOSE TOP',
+  analysis: 'ANALYZING',
+  top20: 'YOUR TOP 20 COLORS',
+  chooseTop: 'CHOOSE YOUR TOP COLORS',
   category: 'CHOOSE CATEGORY',
-  design: 'CHOOSE DESIGN',
-  fabric: 'CHOOSE FABRIC',
+  design: 'SELECT DESIGN',
+  fabric: 'SELECT PTRI TEXTILE',
   background: 'CHOOSE BACKGROUND',
-  preview: 'PREVIEW LOOK',
+  preview: 'PREVIEW YOUR LOOK',
   recommendation: 'AI RECOMMENDATION',
   results: 'GET YOUR RESULT',
   thanks: 'THANK YOU',

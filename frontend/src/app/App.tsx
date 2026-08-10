@@ -7,9 +7,7 @@ import { api } from '../shared/api/client';
 import { averageImageColor, rankPaletteFromSample } from '../shared/lib/colorEngine';
 import type { LightingInfo, PaletteColor, SelectionMode } from '../shared/lib/types';
 import { WelcomeScreen } from '../features/welcome/WelcomeScreen';
-import { CameraGuideScreen } from '../features/camera/CameraGuideScreen';
-import { LightingCheckScreen } from '../features/camera/LightingCheckScreen';
-import { LiveScanScreen } from '../features/camera/LiveScanScreen';
+import { AutoScanScreen } from '../features/camera/AutoScanScreen';
 import { AnalysisScreen } from '../features/analysis/AnalysisScreen';
 import { Top20Screen } from '../features/colors/Top20Screen';
 import { ChooseTopScreen } from '../features/colors/ChooseTopScreen';
@@ -64,12 +62,8 @@ export default function App() {
     goTo('cameraGuide');
   }
 
-  function handleLightingComplete(lighting: LightingInfo) {
+  function handleCapture(dataUrl: string, canvas: HTMLCanvasElement, lighting: LightingInfo) {
     dispatch({ type: 'SET_LIGHTING', lighting });
-    goTo('liveScan');
-  }
-
-  function handleCapture(dataUrl: string, canvas: HTMLCanvasElement) {
     dispatch({ type: 'SET_CAPTURE', dataUrl });
     const sample = averageImageColor(canvas);
     const ranked = rankPaletteFromSample(sample);
@@ -96,9 +90,8 @@ export default function App() {
       dispatch({ type: 'SET_SELECTED_COLORS', colors: state.top20.slice(0, 5) });
     } else if (mode === 'top10') {
       dispatch({ type: 'SET_SELECTED_COLORS', colors: state.top20.slice(0, 10) });
-    } else if (!state.selectedColors.length) {
-      dispatch({ type: 'SET_SELECTED_COLORS', colors: state.top20.slice(0, 5) });
     }
+    // 'custom' keeps the current picks so the visitor chooses freely
   }
 
   function toggleColor(color: PaletteColor, limit: number) {
@@ -147,8 +140,11 @@ export default function App() {
   }
 
   const hideChrome = state.step === 'welcome' || state.step === 'thanks';
-  const limit = state.selectionMode === 'top10' ? 10 : 5;
-  const chooseReady = state.selectedColors.length === limit;
+  const limit = state.selectionMode === 'top5' ? 5 : 10;
+  const chooseReady =
+    state.selectionMode === 'custom'
+      ? state.selectedColors.length >= 1
+      : state.selectedColors.length === limit;
 
   let body: ReactNode = null;
   let footer: ReactNode = null;
@@ -158,16 +154,8 @@ export default function App() {
       body = <WelcomeScreen onStart={startFromHome} />;
       break;
     case 'cameraGuide':
-      body = <CameraGuideScreen onContinue={() => goTo('lightingCheck')} />;
+      body = <AutoScanScreen onCapture={handleCapture} />;
       footer = <NavButtons onBack={() => goTo('welcome')} hideNext />;
-      break;
-    case 'lightingCheck':
-      body = <LightingCheckScreen onComplete={handleLightingComplete} />;
-      footer = <NavButtons onBack={back} hideNext />;
-      break;
-    case 'liveScan':
-      body = <LiveScanScreen onCapture={handleCapture} />;
-      footer = <NavButtons onBack={back} hideNext />;
       break;
     case 'analysis':
       body = (
@@ -191,7 +179,7 @@ export default function App() {
       );
       footer = (
         <NavButtons
-          onBack={() => goTo('liveScan')}
+          onBack={() => goTo('cameraGuide')}
           onNext={() => goTo('chooseTop')}
           nextLabel="NEXT"
         />
@@ -211,7 +199,7 @@ export default function App() {
         <NavButtons
           onBack={back}
           onNext={next}
-          nextLabel="CONFIRM SELECTION"
+          nextLabel={`CONFIRM (${state.selectedColors.length})`}
           nextIcon="check"
           nextDisabled={!chooseReady}
         />

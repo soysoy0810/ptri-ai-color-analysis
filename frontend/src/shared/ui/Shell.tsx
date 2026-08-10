@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { motion } from 'framer-motion';
 import { HelpCircle } from 'lucide-react';
 
 interface ShellProps {
@@ -10,6 +11,51 @@ interface ShellProps {
   footer?: ReactNode;
   onHelp?: (() => void) | null;
   toast?: string;
+}
+
+/** Numbered step header + dot progress track, matching the approved design board */
+function Stepper({ stepIndex, totalSteps, label }: { stepIndex: number; totalSteps: number; label?: string }) {
+  // dots exclude welcome/thanks bookends
+  const dots = totalSteps - 2;
+  const current = Math.min(Math.max(stepIndex - 1, 0), dots - 1);
+  return (
+    <div className="px-5 pt-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-baseline gap-2">
+          <span className="text-[13px] font-extrabold tabular-nums text-accent">
+            {String(stepIndex + 1).padStart(2, '0')}
+          </span>
+          <span className="text-[13px] font-extrabold uppercase tracking-wide text-navy">
+            {label}
+          </span>
+        </div>
+      </div>
+      <div className="relative mt-2 flex items-center">
+        <div className="absolute inset-x-0 h-[2px] rounded bg-line" />
+        <motion.div
+          className="absolute left-0 h-[2px] rounded bg-accent"
+          animate={{ width: `${(current / (dots - 1)) * 100}%` }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+        />
+        <div className="relative flex w-full justify-between">
+          {Array.from({ length: dots }, (_, i) => (
+            <motion.span
+              key={i}
+              className={`h-2.5 w-2.5 rounded-full border-2 ${
+                i < current
+                  ? 'border-accent bg-accent'
+                  : i === current
+                    ? 'border-accent bg-white'
+                    : 'border-line bg-white'
+              }`}
+              animate={i === current ? { scale: [1, 1.35, 1] } : { scale: 1 }}
+              transition={i === current ? { duration: 1.6, repeat: Infinity } : {}}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function Shell({
@@ -32,29 +78,11 @@ export function Shell({
         </div>
       ) : null}
 
-      {showHeader ? (
-        <header className="flex items-center justify-between gap-3 px-5 pb-2 pt-4">
-          <div className="flex items-center gap-2.5">
-            <div className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-navy to-accent text-[11px] font-extrabold tracking-wide text-white">
-              PTRI
-            </div>
-            <div>
-              <strong className="block text-[13px] leading-tight text-navy">AI Color Analysis</strong>
-              <span className="text-[11px] text-muted">DOST–Philippine Textile Research Institute</span>
-            </div>
-          </div>
-          {stepIndex > 0 ? (
-            <div className="max-w-[46%] rounded-full bg-accent-soft px-3 py-2 text-right text-[10px] font-bold leading-tight text-accent">
-              <div>
-                {stepIndex} / {totalSteps - 1}
-              </div>
-              <div className="truncate">{stepLabel}</div>
-            </div>
-          ) : null}
-        </header>
+      {showHeader && stepIndex > 0 ? (
+        <Stepper stepIndex={stepIndex} totalSteps={totalSteps} label={stepLabel} />
       ) : null}
 
-      <main className={`flex-1 overflow-auto ${showHeader ? 'px-5 pb-5 pt-2' : 'p-0'}`}>
+      <main className={`flex-1 overflow-auto ${showHeader ? 'px-5 pb-5 pt-4' : 'p-0'}`}>
         {children}
       </main>
 

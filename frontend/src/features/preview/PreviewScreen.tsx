@@ -1,3 +1,5 @@
+import { motion } from 'framer-motion';
+import { ImageIcon, Sparkles } from 'lucide-react';
 import { CATEGORIES, DESIGNS, FABRICS } from '../../data/catalog';
 import { garmentForDesign } from '../../data/garments';
 import type { PaletteColor } from '../../shared/lib/types';
@@ -32,10 +34,9 @@ export function PreviewScreen({
 
   return (
     <section className="screen">
-      <h1 className="screen-title">Preview Your Look</h1>
-      <p className="screen-sub">Your face with the selected garment, fabric color, and scene.</p>
+      <h1 className="screen-title">This is how it looks on you.</h1>
 
-      <div className="mt-2 grid gap-3">
+      <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}>
         <LookComposer
           captureDataUrl={captureDataUrl}
           garmentKey={garmentKey}
@@ -43,43 +44,50 @@ export function PreviewScreen({
           backgroundId={backgroundId}
           designName={design?.name}
         />
+      </motion.div>
 
-        <div className="rounded-2xl border border-line bg-white p-4 shadow-sm">
-          <h2 className="mb-3 text-[11px] font-extrabold uppercase tracking-wide text-muted">
-            Your Selections
-          </h2>
-          <div className="space-y-2 text-sm">
-            <Row label="Category" value={category?.label || '—'} />
-            <Row label="Design" value={design ? design.name : '—'} />
-            <Row label="Fabric" value={fabric ? `${fabric.code} ${fabric.name}` : '—'} />
-          </div>
-          <div className="mt-3">
-            <div className="mb-1.5 text-[11px] font-bold uppercase text-muted">Top Colors</div>
-            <div className="flex flex-wrap gap-1.5">
-              {selectedColors.slice(0, 6).map((c) => (
-                <span
-                  key={c.id}
-                  className="h-8 w-8 rounded-full border border-black/10 shadow-sm"
-                  style={{ background: c.hex }}
-                  title={c.name}
-                />
-              ))}
-            </div>
+      {/* YOUR SELECTIONS panel */}
+      <motion.div
+        className="mt-3 rounded-2xl border border-line bg-white p-4 shadow-sm"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.12 }}
+      >
+        <h2 className="mb-3 text-[11px] font-extrabold uppercase tracking-wide text-muted">
+          Your Selections
+        </h2>
+        <div className="space-y-2 text-sm">
+          <Row label="Category" value={category?.label || '—'} />
+          <Row label="Design" value={design ? design.name : '—'} />
+          <Row label="Fabric" value={fabric ? `PTRI ${fabric.code} · ${fabric.name}` : '—'} />
+        </div>
+        <div className="mt-3">
+          <div className="mb-1.5 text-[11px] font-bold uppercase text-muted">Top Colors</div>
+          <div className="flex flex-wrap gap-1.5">
+            {selectedColors.slice(0, 10).map((c, i) => (
+              <motion.span
+                key={c.id}
+                className="h-8 w-8 rounded-full border border-black/10 shadow-sm"
+                style={{ background: c.hex }}
+                title={c.name}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.2 + i * 0.05 }}
+              />
+            ))}
           </div>
         </div>
+      </motion.div>
 
-        <div className="grid grid-cols-2 gap-2">
-          <button type="button" className="btn btn-secondary text-xs" onClick={onChangeBackground}>
-            CHANGE BACKGROUND
-          </button>
-          <button
-            type="button"
-            className="btn border border-line bg-white text-xs text-navy"
-            onClick={onViewDetails}
-          >
-            VIEW DETAILS
-          </button>
-        </div>
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <button type="button" className="btn btn-secondary text-xs" onClick={onChangeBackground}>
+          <ImageIcon className="h-4 w-4" />
+          CHANGE BACKGROUND
+        </button>
+        <button type="button" className="btn btn-accent text-xs" onClick={onViewDetails}>
+          <Sparkles className="h-4 w-4" />
+          VIEW RECOMMENDATION
+        </button>
       </div>
     </section>
   );

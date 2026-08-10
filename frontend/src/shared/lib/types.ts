@@ -1,9 +1,7 @@
-/** Matches System Guide Section A (15 steps). */
+/** Kiosk flow — camera guide, lighting and scan are merged into one auto-detect step. */
 export type StepId =
   | 'welcome'
   | 'cameraGuide'
-  | 'lightingCheck'
-  | 'liveScan'
   | 'analysis'
   | 'top20'
   | 'chooseTop'

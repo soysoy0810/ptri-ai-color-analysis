@@ -7,8 +7,15 @@ interface Rgb {
   b: number;
 }
 
+/** Palette used for ranking — bundled by default, replaced by the DB catalog when the API is online */
+let ACTIVE_PALETTE: PaletteColor[] = APPROVED_PALETTE;
+
+export function setActivePalette(colors: PaletteColor[]): void {
+  if (colors.length) ACTIVE_PALETTE = colors;
+}
+
 export function rankPaletteFromSample(rgb: Rgb = { r: 180, g: 140, b: 120 }): PaletteColor[] {
-  const scored = APPROVED_PALETTE.map((color) => {
+  const scored = ACTIVE_PALETTE.map((color) => {
     const c = hexToRgb(color.hex);
     const dist = colorDistance(rgb, c);
     const warmthBias = warmthScore(rgb) * warmthScore(c);

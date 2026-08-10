@@ -3,110 +3,419 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PTRI Kiosk Admin</title>
+    <title>PTRI AI Kiosk — Admin Panel</title>
     <style>
-      :root { --navy:#0b1f3a; --blue:#1f6feb; --line:#d9e2ec; --bg:#f5f7fb; }
+      :root {
+        --navy: #0b1f3a; --blue: #2f80ed; --blue-soft: #e8f1ff;
+        --line: #d9e2ec; --bg: #f2f5fa; --muted: #627d98;
+        --green: #12805c; --red: #b3261e;
+      }
       * { box-sizing: border-box; }
-      body { margin:0; font-family: Manrope, Segoe UI, sans-serif; background:var(--bg); color:var(--navy); }
-      header { background:linear-gradient(120deg,var(--navy),#1e4d8c); color:#fff; padding:20px 28px; }
-      main { display:grid; grid-template-columns:240px 1fr; min-height:calc(100vh - 76px); }
-      nav { background:#fff; border-right:1px solid var(--line); padding:18px; }
-      nav button { width:100%; text-align:left; border:0; background:transparent; padding:12px 10px; border-radius:10px; font-weight:600; color:var(--navy); cursor:pointer; }
-      nav button.active, nav button:hover { background:#e8f1ff; color:var(--blue); }
-      section { padding:24px 28px; }
-      .card { background:#fff; border:1px solid var(--line); border-radius:16px; padding:18px; margin-bottom:16px; }
-      .grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
-      .swatch { aspect-ratio:1; border-radius:12px; border:1px solid rgba(0,0,0,.08); }
-      table { width:100%; border-collapse:collapse; }
-      th, td { text-align:left; padding:10px 8px; border-bottom:1px solid var(--line); font-size:14px; }
-      .muted { color:#627d98; }
+      body { margin: 0; font-family: Manrope, "Segoe UI", sans-serif; background: var(--bg); color: var(--navy); }
+      button { font-family: inherit; cursor: pointer; }
+      input, select { font-family: inherit; }
+
+      /* ---------- login ---------- */
+      .login-wrap { display: grid; place-items: center; min-height: 100vh;
+        background: linear-gradient(150deg, #0b1f3a 0%, #16407c 55%, #2f80ed 130%); }
+      .login-card { width: min(92vw, 400px); background: #fff; border-radius: 20px; padding: 34px 30px;
+        box-shadow: 0 24px 60px rgba(4, 12, 26, 0.45); }
+      .login-card h1 { margin: 0 0 4px; font-size: 22px; }
+      .login-card p { margin: 0 0 22px; color: var(--muted); font-size: 14px; }
+      .field { margin-bottom: 14px; }
+      .field label { display: block; font-size: 12px; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.04em; color: var(--muted); margin-bottom: 6px; }
+      .field input { width: 100%; padding: 13px 14px; border: 1.5px solid var(--line); border-radius: 12px;
+        font-size: 15px; outline: none; }
+      .field input:focus { border-color: var(--blue); }
+      .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        border: 0; border-radius: 12px; padding: 13px 18px; font-size: 14px; font-weight: 800; }
+      .btn-primary { width: 100%; background: linear-gradient(120deg, var(--navy), #1e4d8c); color: #fff; }
+      .btn-blue { background: var(--blue); color: #fff; }
+      .btn-ghost { background: #fff; border: 1.5px solid var(--line); color: var(--navy); }
+      .btn-danger { background: #fdecea; color: var(--red); }
+      .error { color: var(--red); font-size: 13px; font-weight: 600; margin-top: 10px; }
+      .logo-dot { width: 46px; height: 46px; border-radius: 14px; margin-bottom: 16px;
+        background: linear-gradient(130deg, var(--blue), var(--navy)); display: grid; place-items: center;
+        color: #fff; font-weight: 800; font-size: 15px; }
+
+      /* ---------- app shell ---------- */
+      header.app { background: linear-gradient(120deg, var(--navy), #1e4d8c); color: #fff;
+        padding: 16px 26px; display: flex; align-items: center; justify-content: space-between; }
+      header.app strong { font-size: 16px; }
+      header.app .who { font-size: 13px; opacity: 0.85; margin-right: 14px; }
+      main { display: grid; grid-template-columns: 230px 1fr; min-height: calc(100vh - 68px); }
+      nav { background: #fff; border-right: 1px solid var(--line); padding: 16px 12px; }
+      nav button { width: 100%; text-align: left; border: 0; background: transparent; padding: 12px 12px;
+        border-radius: 10px; font-weight: 700; color: var(--navy); font-size: 14px; margin-bottom: 2px; }
+      nav button.active, nav button:hover { background: var(--blue-soft); color: var(--blue); }
+      section.content { padding: 22px 26px; }
+      .card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+      .card h2 { margin: 0 0 4px; font-size: 18px; }
+      .card .sub { margin: 0 0 16px; color: var(--muted); font-size: 13px; }
+
+      .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+      .stat { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+      .stat .n { font-size: 28px; font-weight: 800; }
+      .stat .l { font-size: 12px; color: var(--muted); font-weight: 700; text-transform: uppercase; }
+
+      table { width: 100%; border-collapse: collapse; }
+      th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); font-size: 13.5px; }
+      th { color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em; }
+      .muted { color: var(--muted); }
+      .pill { display: inline-block; border-radius: 99px; padding: 3px 10px; font-size: 11px; font-weight: 800; }
+      .pill.on { background: #e6f4ee; color: var(--green); }
+      .pill.off { background: #fdecea; color: var(--red); }
+
+      /* palette editor */
+      .pal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+      .pal-item { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: #fff; }
+      .pal-item .sw { height: 72px; }
+      .pal-item .meta { padding: 10px 12px; }
+      .pal-item .meta strong { display: block; font-size: 13px; }
+      .pal-item .meta span { font-size: 11.5px; color: var(--muted); }
+      .pal-item .actions { display: flex; gap: 6px; padding: 0 12px 12px; }
+      .pal-item .actions button { flex: 1; padding: 7px 0; font-size: 11.5px; font-weight: 800;
+        border-radius: 8px; border: 1.5px solid var(--line); background: #fff; }
+      .pal-item .actions .edit { color: var(--blue); }
+      .pal-item .actions .del { color: var(--red); }
+
+      .add-row { display: grid; grid-template-columns: 1fr 130px 110px auto; gap: 10px; align-items: end; }
+      .add-row .field { margin: 0; }
+      .add-row input[type="color"] { width: 100%; height: 46px; padding: 4px; border: 1.5px solid var(--line);
+        border-radius: 12px; background: #fff; }
+
+      dialog { border: 0; border-radius: 18px; padding: 24px; width: min(92vw, 380px);
+        box-shadow: 0 30px 70px rgba(4, 12, 26, 0.4); }
+      dialog::backdrop { background: rgba(8, 18, 36, 0.55); }
+      .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+        background: var(--navy); color: #fff; border-radius: 12px; padding: 12px 20px; font-size: 14px;
+        font-weight: 700; opacity: 0; transition: opacity 0.25s; pointer-events: none; z-index: 60; }
+      .toast.show { opacity: 1; }
+      @media (max-width: 860px) {
+        main { grid-template-columns: 1fr; }
+        nav { display: flex; overflow-x: auto; }
+        .stat-grid { grid-template-columns: repeat(2, 1fr); }
+        .add-row { grid-template-columns: 1fr 1fr; }
+      }
     </style>
   </head>
   <body>
-    <header>
-      <strong>PTRI AI Kiosk — Admin Panel</strong>
-      <div style="opacity:.85;font-size:14px;margin-top:4px">Reads the same `/api/catalog` contract as frontend & AI</div>
-    </header>
-    <main>
-      <nav>
-        <button class="active" data-view="dashboard">Dashboard</button>
-        <button data-view="palette">Color Palette</button>
-        <button data-view="fabrics">Fabrics</button>
-        <button data-view="sessions">Kiosk Sessions</button>
-        <button data-view="settings">Settings</button>
-      </nav>
-      <section id="view"></section>
-    </main>
-    <script>
-      const API = 'http://127.0.0.1:8000';
-      const view = document.getElementById('view');
-      const buttons = [...document.querySelectorAll('nav button')];
+    <div id="app"></div>
+    <div id="toast" class="toast"></div>
 
-      async function loadCatalog() {
-        const res = await fetch(API + '/api/catalog');
-        const payload = await res.json();
-        if (!payload.ok) throw new Error(payload?.error?.message || 'Catalog failed');
+    <script>
+      // API served by the same Apache — works on localhost and on the kiosk LAN
+      const API = new URL('../backend/public/api', window.location.href).href;
+      const app = document.getElementById('app');
+      let token = localStorage.getItem('ptri_admin_token') || '';
+      let adminName = localStorage.getItem('ptri_admin_name') || 'Admin';
+      let currentView = 'dashboard';
+
+      function toast(msg) {
+        const el = document.getElementById('toast');
+        el.textContent = msg;
+        el.classList.add('show');
+        setTimeout(() => el.classList.remove('show'), 2400);
+      }
+
+      async function call(path, options = {}) {
+        const res = await fetch(API + path, {
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            ...(token ? { Authorization: 'Bearer ' + token } : {}),
+          },
+          ...options,
+        });
+        const payload = await res.json().catch(() => ({}));
+        if (res.status === 401) { logout(); throw new Error('Session expired — please sign in.'); }
+        if (!res.ok || payload.ok === false) {
+          throw new Error(payload?.error?.message || 'Request failed (' + res.status + ')');
+        }
         return payload.data;
       }
 
-      function renderDashboard(catalog) {
-        view.innerHTML = `<div class="card"><h2>Dashboard</h2>
-          <p class="muted">Shared catalog seeded from <code>shared/catalog/*.json</code>.</p>
-          <p><strong>${catalog.palette.length}</strong> colors ·
-             <strong>${catalog.fabrics.length}</strong> fabrics ·
-             <strong>${catalog.categories.length}</strong> categories ·
-             <strong>${catalog.designs.length}</strong> designs</p></div>`;
+      /* ---------------- login ---------------- */
+      function renderLogin(msg = '') {
+        app.innerHTML = `
+          <div class="login-wrap">
+            <form class="login-card" id="login-form">
+              <div class="logo-dot">AI</div>
+              <h1>PTRI Kiosk Admin</h1>
+              <p>Philippine Textile Research Institute — sign in to manage the kiosk.</p>
+              <div class="field">
+                <label for="email">Email</label>
+                <input id="email" type="email" autocomplete="username" required value="admin@ptri.dost.gov.ph" />
+              </div>
+              <div class="field">
+                <label for="password">Password</label>
+                <input id="password" type="password" autocomplete="current-password" required />
+              </div>
+              <button class="btn btn-primary" type="submit">SIGN IN</button>
+              <div class="error" id="login-error">${msg}</div>
+            </form>
+          </div>`;
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const btn = e.target.querySelector('button');
+          btn.disabled = true; btn.textContent = 'SIGNING IN…';
+          try {
+            const data = await call('/admin/login', {
+              method: 'POST',
+              body: JSON.stringify({
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value,
+              }),
+            });
+            token = data.token; adminName = data.name;
+            localStorage.setItem('ptri_admin_token', token);
+            localStorage.setItem('ptri_admin_name', adminName);
+            renderShell();
+            show('dashboard');
+          } catch (err) {
+            document.getElementById('login-error').textContent = err.message;
+            btn.disabled = false; btn.textContent = 'SIGN IN';
+          }
+        });
       }
 
-      function renderPalette(catalog) {
-        view.innerHTML = `<div class="card"><h2>Approved Color Palette</h2>
-          <div class="grid">${catalog.palette.map(c =>
-            `<div><div class="swatch" style="background:${c.hex}"></div>
-             <div style="font-size:12px;margin-top:6px">${c.name}<br><span class="muted">${c.hex}</span></div></div>`
-          ).join('')}</div></div>`;
+      function logout() {
+        token = '';
+        localStorage.removeItem('ptri_admin_token');
+        renderLogin();
       }
 
-      function renderFabrics(catalog) {
-        view.innerHTML = `<div class="card"><h2>PTRI Fabrics</h2>
-          <table><thead><tr><th></th><th>Code</th><th>Name</th><th>Hex</th></tr></thead>
-          <tbody>${catalog.fabrics.map(f =>
-            `<tr><td><div class="swatch" style="width:36px;height:36px;background:${f.hex}"></div></td>
-             <td>${f.code}</td><td>${f.name}</td><td>${f.hex}</td></tr>`
-          ).join('')}</tbody></table></div>`;
+      /* ---------------- shell ---------------- */
+      const VIEWS = [
+        ['dashboard', 'Dashboard'],
+        ['palette', 'Color Palette'],
+        ['fabrics', 'Fabrics'],
+        ['sessions', 'Kiosk Sessions'],
+      ];
+
+      function renderShell() {
+        app.innerHTML = `
+          <header class="app">
+            <strong>PTRI AI Kiosk — Admin Panel</strong>
+            <div>
+              <span class="who">Signed in as ${adminName}</span>
+              <button class="btn btn-ghost" id="logout" style="padding:8px 14px;font-size:12px">Log out</button>
+            </div>
+          </header>
+          <main>
+            <nav>${VIEWS.map(([id, label]) =>
+              `<button data-view="${id}">${label}</button>`).join('')}</nav>
+            <section class="content" id="view"></section>
+          </main>`;
+        document.getElementById('logout').addEventListener('click', logout);
+        app.querySelectorAll('nav button').forEach((b) =>
+          b.addEventListener('click', () => show(b.dataset.view)));
       }
 
-      function renderSessions() {
-        view.innerHTML = `<div class="card"><h2>Kiosk Sessions</h2>
-          <p class="muted">Stored in DB table <code>kiosk_sessions</code> (SQLite/MySQL).</p></div>`;
-      }
-
-      function renderSettings() {
-        view.innerHTML = `<div class="card"><h2>Settings</h2>
-          <ul>
-            <li>API contract: <code>shared/contracts/api.md</code></li>
-            <li>DB migrate: <code>php scripts/db_migrate.php</code></li>
-            <li>AI service: <code>http://127.0.0.1:8001</code></li>
-          </ul></div>`;
+      function setActive(name) {
+        currentView = name;
+        app.querySelectorAll('nav button').forEach((b) =>
+          b.classList.toggle('active', b.dataset.view === name));
       }
 
       async function show(name) {
-        buttons.forEach(b => b.classList.toggle('active', b.dataset.view === name));
-        if (name === 'sessions') return renderSessions();
-        if (name === 'settings') return renderSettings();
+        setActive(name);
+        const view = document.getElementById('view');
+        view.innerHTML = '<p class="muted">Loading…</p>';
         try {
-          const catalog = await loadCatalog();
-          if (name === 'palette') return renderPalette(catalog);
-          if (name === 'fabrics') return renderFabrics(catalog);
-          return renderDashboard(catalog);
-        } catch (e) {
-          view.innerHTML = `<div class="card"><h2>API unavailable</h2>
-            <p class="muted">${e.message}</p>
-            <p>Run <code>php scripts/db_migrate.php</code> then open the backend URL.</p></div>`;
+          if (name === 'dashboard') return renderDashboard(view);
+          if (name === 'palette') return renderPalette(view);
+          if (name === 'fabrics') return renderFabrics(view);
+          if (name === 'sessions') return renderSessions(view);
+        } catch (err) {
+          view.innerHTML = `<div class="card"><h2>Something went wrong</h2><p class="muted">${err.message}</p></div>`;
         }
       }
 
-      buttons.forEach(b => b.addEventListener('click', () => show(b.dataset.view)));
-      show('dashboard');
+      /* ---------------- dashboard ---------------- */
+      async function renderDashboard(view) {
+        const s = await call('/admin/stats');
+        view.innerHTML = `
+          <div class="stat-grid">
+            <div class="stat"><div class="n">${s.sessions_total}</div><div class="l">Total Sessions</div></div>
+            <div class="stat"><div class="n">${s.sessions_today}</div><div class="l">Sessions Today</div></div>
+            <div class="stat"><div class="n">${s.sessions_completed}</div><div class="l">Completed</div></div>
+            <div class="stat"><div class="n">${s.staff_alerts_open}</div><div class="l">Open Staff Alerts</div></div>
+            <div class="stat"><div class="n">${s.colors_active}</div><div class="l">Active Colors</div></div>
+            <div class="stat"><div class="n">${s.fabrics_active}</div><div class="l">PTRI Fabrics</div></div>
+            <div class="stat"><div class="n">${s.designs_active}</div><div class="l">Designs</div></div>
+            <div class="stat"><div class="n">${s.emails_queued}</div><div class="l">Emails Queued</div></div>
+          </div>
+          <div class="card" style="margin-top:16px">
+            <h2>Welcome, ${adminName}</h2>
+            <p class="sub">Use <strong>Color Palette</strong> to add or edit the approved kiosk colors —
+            the kiosk loads them automatically. Kiosk visits appear under <strong>Kiosk Sessions</strong>.</p>
+          </div>`;
+      }
+
+      /* ---------------- palette ---------------- */
+      async function renderPalette(view) {
+        const colors = await call('/admin/colors');
+        view.innerHTML = `
+          <div class="card">
+            <h2>Add a Palette Color</h2>
+            <p class="sub">New colors join the approved palette that the kiosk AI ranks for each visitor.</p>
+            <form class="add-row" id="add-form">
+              <div class="field"><label>Color name</label><input id="new-name" required placeholder="e.g. Manila Sunrise" /></div>
+              <div class="field"><label>Color</label><input id="new-hex" type="color" value="#1E4D8C" /></div>
+              <div class="field"><label>Sort order</label><input id="new-sort" type="number" min="0" value="${colors.length + 1}" /></div>
+              <button class="btn btn-blue" type="submit">ADD COLOR</button>
+            </form>
+          </div>
+          <div class="card">
+            <h2>Approved Palette (${colors.length})</h2>
+            <p class="sub">Tap Edit to rename or recolor. Inactive colors are hidden from the kiosk.</p>
+            <div class="pal-grid">${colors.map((c) => `
+              <div class="pal-item">
+                <div class="sw" style="background:${c.hex}"></div>
+                <div class="meta">
+                  <strong>${c.name}</strong>
+                  <span>${c.hex} · #${c.sort_order}</span>
+                  <span class="pill ${c.is_active ? 'on' : 'off'}" style="float:right">${c.is_active ? 'Active' : 'Hidden'}</span>
+                </div>
+                <div class="actions">
+                  <button class="edit" data-id="${c.id}">Edit</button>
+                  <button data-id="${c.id}" data-active="${c.is_active ? 0 : 1}" class="tog">${c.is_active ? 'Hide' : 'Show'}</button>
+                  <button class="del" data-id="${c.id}">Delete</button>
+                </div>
+              </div>`).join('')}
+            </div>
+          </div>
+          <dialog id="edit-dialog">
+            <form id="edit-form">
+              <h2 style="margin:0 0 14px">Edit Color</h2>
+              <div class="field"><label>Name</label><input id="edit-name" required /></div>
+              <div class="field"><label>Color</label><input id="edit-hex" type="color" style="width:100%;height:46px;padding:4px;border:1.5px solid var(--line);border-radius:12px;background:#fff" /></div>
+              <div class="field"><label>Sort order</label><input id="edit-sort" type="number" min="0" /></div>
+              <div style="display:flex;gap:10px;margin-top:16px">
+                <button class="btn btn-ghost" type="button" id="edit-cancel" style="flex:1">Cancel</button>
+                <button class="btn btn-blue" type="submit" style="flex:1">Save</button>
+              </div>
+            </form>
+          </dialog>`;
+
+        document.getElementById('add-form').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          try {
+            await call('/admin/colors', {
+              method: 'POST',
+              body: JSON.stringify({
+                name: document.getElementById('new-name').value,
+                hex: document.getElementById('new-hex').value,
+                sort_order: Number(document.getElementById('new-sort').value),
+              }),
+            });
+            toast('Color added to the palette.');
+            renderPalette(view);
+          } catch (err) { toast(err.message); }
+        });
+
+        const dialog = document.getElementById('edit-dialog');
+        let editing = null;
+        view.querySelectorAll('.edit').forEach((b) => b.addEventListener('click', () => {
+          editing = colors.find((c) => c.id === b.dataset.id);
+          document.getElementById('edit-name').value = editing.name;
+          document.getElementById('edit-hex').value = editing.hex;
+          document.getElementById('edit-sort').value = editing.sort_order;
+          dialog.showModal();
+        }));
+        document.getElementById('edit-cancel').addEventListener('click', () => dialog.close());
+        document.getElementById('edit-form').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          try {
+            await call('/admin/colors/' + editing.id, {
+              method: 'PUT',
+              body: JSON.stringify({
+                name: document.getElementById('edit-name').value,
+                hex: document.getElementById('edit-hex').value,
+                sort_order: Number(document.getElementById('edit-sort').value),
+              }),
+            });
+            dialog.close();
+            toast('Color updated.');
+            renderPalette(view);
+          } catch (err) { toast(err.message); }
+        });
+
+        view.querySelectorAll('.tog').forEach((b) => b.addEventListener('click', async () => {
+          try {
+            await call('/admin/colors/' + b.dataset.id, {
+              method: 'PUT',
+              body: JSON.stringify({ is_active: b.dataset.active === '1' }),
+            });
+            renderPalette(view);
+          } catch (err) { toast(err.message); }
+        }));
+
+        view.querySelectorAll('.del').forEach((b) => b.addEventListener('click', async () => {
+          if (!confirm('Delete this color from the palette?')) return;
+          try {
+            await call('/admin/colors/' + b.dataset.id, { method: 'DELETE' });
+            toast('Color deleted.');
+            renderPalette(view);
+          } catch (err) { toast(err.message); }
+        }));
+      }
+
+      /* ---------------- fabrics ---------------- */
+      async function renderFabrics(view) {
+        const catalog = await call('/catalog');
+        view.innerHTML = `
+          <div class="card">
+            <h2>PTRI Fabrics (${catalog.fabrics.length})</h2>
+            <p class="sub">Textiles offered on the kiosk with their base AI match score.</p>
+            <table>
+              <thead><tr><th></th><th>Code</th><th>Name</th><th>Hex</th><th>Base Match</th></tr></thead>
+              <tbody>${catalog.fabrics.map((f) => `
+                <tr>
+                  <td><div style="width:34px;height:34px;border-radius:10px;background:${f.hex};border:1px solid rgba(0,0,0,.08)"></div></td>
+                  <td>${f.code}</td><td>${f.name}</td><td class="muted">${f.hex}</td><td>${f.base_match}%</td>
+                </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>`;
+      }
+
+      /* ---------------- sessions ---------------- */
+      async function renderSessions(view) {
+        const sessions = await call('/admin/sessions');
+        view.innerHTML = `
+          <div class="card">
+            <h2>Kiosk Sessions (${sessions.length} latest)</h2>
+            <p class="sub">Every visit recorded by the kiosk, newest first.</p>
+            <table>
+              <thead><tr><th>Visitor</th><th>Age</th><th>Gender</th><th>Email</th>
+                <th>Category</th><th>Design</th><th>Status</th><th>Date</th></tr></thead>
+              <tbody>${sessions.map((s) => `
+                <tr>
+                  <td><strong>${s.full_name || 'Guest'}</strong></td>
+                  <td class="muted">${s.age_range || '—'}</td>
+                  <td class="muted">${s.gender || '—'}</td>
+                  <td class="muted">${s.email || '—'}</td>
+                  <td>${s.category_id || '—'}</td>
+                  <td>${s.design_id || '—'}</td>
+                  <td><span class="pill ${s.completed_at ? 'on' : 'off'}">${s.completed_at ? 'Completed' : s.status}</span></td>
+                  <td class="muted">${new Date(s.created_at).toLocaleString()}</td>
+                </tr>`).join('')}
+              </tbody>
+            </table>
+            ${sessions.length === 0 ? '<p class="muted" style="margin-top:14px">No sessions yet — they appear here after visitors use the kiosk.</p>' : ''}
+          </div>`;
+      }
+
+      /* ---------------- boot ---------------- */
+      if (token) {
+        renderShell();
+        show('dashboard');
+      } else {
+        renderLogin();
+      }
     </script>
   </body>
 </html>

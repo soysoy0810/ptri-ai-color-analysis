@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\AnalyzeController;
 use App\Http\Controllers\Api\CatalogController;
 use App\Http\Controllers\Api\ResultController;
@@ -26,3 +27,12 @@ Route::post('/sessions/{id}/email', [SessionController::class, 'email']);
 Route::post('/analyze', [AnalyzeController::class, 'store']);
 Route::post('/staff-alerts', [StaffAlertController::class, 'store']);
 Route::get('/results/{token}', [ResultController::class, 'show']);
+
+// Admin panel
+Route::post('/admin/login', [AdminController::class, 'login']);
+Route::get('/admin/stats', [AdminController::class, 'stats']);
+Route::get('/admin/sessions', [AdminController::class, 'sessions']);
+Route::get('/admin/colors', [AdminController::class, 'colors']);
+Route::post('/admin/colors', [AdminController::class, 'storeColor']);
+Route::put('/admin/colors/{id}', [AdminController::class, 'updateColor']);
+Route::delete('/admin/colors/{id}', [AdminController::class, 'deleteColor']);

@@ -4,7 +4,7 @@ import { Shell } from '../shared/ui/Shell';
 import { NavButtons } from '../shared/ui/NavButtons';
 import { useKioskSession } from '../shared/hooks/useKioskSession';
 import { api } from '../shared/api/client';
-import { averageImageColor, rankPaletteFromSample } from '../shared/lib/colorEngine';
+import { averageImageColor, rankPaletteFromSample, setActivePalette } from '../shared/lib/colorEngine';
 import { DESIGNS, FABRICS } from '../data/catalog';
 import { garmentForDesign } from '../data/garments';
 import type { FaceRegion, LightingInfo, PaletteColor, SelectionMode } from '../shared/lib/types';
@@ -29,6 +29,19 @@ export default function App() {
   const { state, dispatch, stepIndex, totalSteps, stepLabel, goTo, next, back, reset, summary } =
     useKioskSession();
   const [toast, setToast] = useState('');
+
+  // Load the live palette managed in the admin panel; fall back to bundled JSON offline
+  useEffect(() => {
+    api
+      .getCatalog()
+      .then((catalog) => {
+        const palette = catalog?.palette as PaletteColor[] | undefined;
+        if (palette?.length) setActivePalette(palette);
+      })
+      .catch(() => {
+        /* offline — bundled palette stays active */
+      });
+  }, []);
 
   useEffect(() => {
     if (state.step === 'welcome' || state.step === 'thanks') return undefined;

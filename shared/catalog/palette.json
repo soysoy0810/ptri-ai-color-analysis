@@ -1,0 +1,22 @@
+[
+  { "id": "c01", "name": "Ivory Soft", "hex": "#F5F0E6", "sort_order": 1 },
+  { "id": "c02", "name": "Warm Sand", "hex": "#E8D5B7", "sort_order": 2 },
+  { "id": "c03", "name": "Soft Coral", "hex": "#E8A598", "sort_order": 3 },
+  { "id": "c04", "name": "Rose Clay", "hex": "#C97B84", "sort_order": 4 },
+  { "id": "c05", "name": "Berry Wine", "hex": "#8B3A4A", "sort_order": 5 },
+  { "id": "c06", "name": "Sunset Peach", "hex": "#F0A36B", "sort_order": 6 },
+  { "id": "c07", "name": "Amber Gold", "hex": "#D4A017", "sort_order": 7 },
+  { "id": "c08", "name": "Olive Grove", "hex": "#6B7C3C", "sort_order": 8 },
+  { "id": "c09", "name": "Forest Moss", "hex": "#3D5C45", "sort_order": 9 },
+  { "id": "c10", "name": "Seafoam", "hex": "#7FB9A8", "sort_order": 10 },
+  { "id": "c11", "name": "Teal Depth", "hex": "#2A6F6F", "sort_order": 11 },
+  { "id": "c12", "name": "Sky Mist", "hex": "#A8C5D4", "sort_order": 12 },
+  { "id": "c13", "name": "Royal Blue", "hex": "#1E4D8C", "sort_order": 13 },
+  { "id": "c14", "name": "Navy Anchor", "hex": "#0B1F3A", "sort_order": 14 },
+  { "id": "c15", "name": "Indigo Night", "hex": "#2C3E6B", "sort_order": 15 },
+  { "id": "c16", "name": "Lavender Soft", "hex": "#B8A9C9", "sort_order": 16 },
+  { "id": "c17", "name": "Charcoal", "hex": "#3A3A3A", "sort_order": 17 },
+  { "id": "c18", "name": "Slate Grey", "hex": "#6E7B8B", "sort_order": 18 },
+  { "id": "c19", "name": "Cream White", "hex": "#FAFAF7", "sort_order": 19 },
+  { "id": "c20", "name": "Classic Black", "hex": "#1A1A1A", "sort_order": 20 }
+]

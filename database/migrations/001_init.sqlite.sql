@@ -1,0 +1,114 @@
+-- PTRI AI Color Analysis — SQLite schema (local/dev fallback)
+
+CREATE TABLE IF NOT EXISTS colors (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  hex TEXT NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS categories (
+  id TEXT PRIMARY KEY,
+  label TEXT NOT NULL,
+  description TEXT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS fabrics (
+  id TEXT PRIMARY KEY,
+  code TEXT NOT NULL,
+  name TEXT NOT NULL,
+  hex TEXT NOT NULL,
+  base_match INTEGER NOT NULL DEFAULT 80,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS designs (
+  id TEXT PRIMARY KEY,
+  category_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  style_code TEXT NULL,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (category_id) REFERENCES categories(id)
+);
+
+CREATE TABLE IF NOT EXISTS backgrounds (
+  id TEXT PRIMARY KEY,
+  label TEXT NOT NULL,
+  tone TEXT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS kiosk_sessions (
+  id TEXT PRIMARY KEY,
+  full_name TEXT NOT NULL,
+  age_range TEXT NULL,
+  gender TEXT NULL,
+  email TEXT NULL,
+  status TEXT NOT NULL DEFAULT 'active',
+  selection_mode TEXT NULL,
+  category_id TEXT NULL,
+  design_id TEXT NULL,
+  fabric_id TEXT NULL,
+  background_id TEXT NULL,
+  result_token TEXT NULL,
+  top20_json TEXT NULL,
+  selected_colors_json TEXT NULL,
+  analysis_meta_json TEXT NULL,
+  payload_json TEXT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  completed_at TEXT NULL
+);
+
+CREATE TABLE IF NOT EXISTS staff_alerts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id TEXT NULL,
+  status TEXT NOT NULL DEFAULT 'open',
+  meta_json TEXT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  resolved_at TEXT NULL
+);
+
+CREATE TABLE IF NOT EXISTS email_queue (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id TEXT NOT NULL,
+  email TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'queued',
+  payload_json TEXT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  sent_at TEXT NULL
+);
+
+CREATE TABLE IF NOT EXISTS admin_users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'content_admin',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  actor TEXT NULL,
+  action TEXT NOT NULL,
+  meta_json TEXT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_sessions_status ON kiosk_sessions(status);
+CREATE INDEX IF NOT EXISTS idx_sessions_token ON kiosk_sessions(result_token);

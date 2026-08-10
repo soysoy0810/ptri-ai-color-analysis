@@ -1,0 +1,10 @@
+[
+  { "id": "fab001", "code": "Fabric 001", "name": "Royal Blue Tropical", "hex": "#1E4D8C", "base_match": 96 },
+  { "id": "fab002", "code": "Fabric 002", "name": "Navy Abaca Blend", "hex": "#0B1F3A", "base_match": 94 },
+  { "id": "fab003", "code": "Fabric 003", "name": "Teal Pineapple Fiber", "hex": "#2A6F6F", "base_match": 91 },
+  { "id": "fab004", "code": "Fabric 004", "name": "Seafoam Softweave", "hex": "#7FB9A8", "base_match": 88 },
+  { "id": "fab005", "code": "Fabric 005", "name": "Ivory Natural", "hex": "#F5F0E6", "base_match": 85 },
+  { "id": "fab006", "code": "Fabric 006", "name": "Olive Handloom", "hex": "#6B7C3C", "base_match": 83 },
+  { "id": "fab007", "code": "Fabric 007", "name": "Berry Textile", "hex": "#8B3A4A", "base_match": 80 },
+  { "id": "fab008", "code": "Fabric 008", "name": "Charcoal Weave", "hex": "#3A3A3A", "base_match": 78 }
+]

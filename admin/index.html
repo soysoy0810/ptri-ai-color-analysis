@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PTRI Kiosk Admin</title>
+    <style>
+      :root { --navy:#0b1f3a; --blue:#1f6feb; --line:#d9e2ec; --bg:#f5f7fb; }
+      * { box-sizing: border-box; }
+      body { margin:0; font-family: Manrope, Segoe UI, sans-serif; background:var(--bg); color:var(--navy); }
+      header { background:linear-gradient(120deg,var(--navy),#1e4d8c); color:#fff; padding:20px 28px; }
+      main { display:grid; grid-template-columns:240px 1fr; min-height:calc(100vh - 76px); }
+      nav { background:#fff; border-right:1px solid var(--line); padding:18px; }
+      nav button { width:100%; text-align:left; border:0; background:transparent; padding:12px 10px; border-radius:10px; font-weight:600; color:var(--navy); cursor:pointer; }
+      nav button.active, nav button:hover { background:#e8f1ff; color:var(--blue); }
+      section { padding:24px 28px; }
+      .card { background:#fff; border:1px solid var(--line); border-radius:16px; padding:18px; margin-bottom:16px; }
+      .grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+      .swatch { aspect-ratio:1; border-radius:12px; border:1px solid rgba(0,0,0,.08); }
+      table { width:100%; border-collapse:collapse; }
+      th, td { text-align:left; padding:10px 8px; border-bottom:1px solid var(--line); font-size:14px; }
+      .muted { color:#627d98; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <strong>PTRI AI Kiosk — Admin Panel</strong>
+      <div style="opacity:.85;font-size:14px;margin-top:4px">Reads the same `/api/catalog` contract as frontend & AI</div>
+    </header>
+    <main>
+      <nav>
+        <button class="active" data-view="dashboard">Dashboard</button>
+        <button data-view="palette">Color Palette</button>
+        <button data-view="fabrics">Fabrics</button>
+        <button data-view="sessions">Kiosk Sessions</button>
+        <button data-view="settings">Settings</button>
+      </nav>
+      <section id="view"></section>
+    </main>
+    <script>
+      const API = 'http://127.0.0.1:8000';
+      const view = document.getElementById('view');
+      const buttons = [...document.querySelectorAll('nav button')];
+
+      async function loadCatalog() {
+        const res = await fetch(API + '/api/catalog');
+        const payload = await res.json();
+        if (!payload.ok) throw new Error(payload?.error?.message || 'Catalog failed');
+        return payload.data;
+      }
+
+      function renderDashboard(catalog) {
+        view.innerHTML = `<div class="card"><h2>Dashboard</h2>
+          <p class="muted">Shared catalog seeded from <code>shared/catalog/*.json</code>.</p>
+          <p><strong>${catalog.palette.length}</strong> colors ·
+             <strong>${catalog.fabrics.length}</strong> fabrics ·
+             <strong>${catalog.categories.length}</strong> categories ·
+             <strong>${catalog.designs.length}</strong> designs</p></div>`;
+      }
+
+      function renderPalette(catalog) {
+        view.innerHTML = `<div class="card"><h2>Approved Color Palette</h2>
+          <div class="grid">${catalog.palette.map(c =>
+            `<div><div class="swatch" style="background:${c.hex}"></div>
+             <div style="font-size:12px;margin-top:6px">${c.name}<br><span class="muted">${c.hex}</span></div></div>`
+          ).join('')}</div></div>`;
+      }
+
+      function renderFabrics(catalog) {
+        view.innerHTML = `<div class="card"><h2>PTRI Fabrics</h2>
+          <table><thead><tr><th></th><th>Code</th><th>Name</th><th>Hex</th></tr></thead>
+          <tbody>${catalog.fabrics.map(f =>
+            `<tr><td><div class="swatch" style="width:36px;height:36px;background:${f.hex}"></div></td>
+             <td>${f.code}</td><td>${f.name}</td><td>${f.hex}</td></tr>`
+          ).join('')}</tbody></table></div>`;
+      }
+
+      function renderSessions() {
+        view.innerHTML = `<div class="card"><h2>Kiosk Sessions</h2>
+          <p class="muted">Stored in DB table <code>kiosk_sessions</code> (SQLite/MySQL).</p></div>`;
+      }
+
+      function renderSettings() {
+        view.innerHTML = `<div class="card"><h2>Settings</h2>
+          <ul>
+            <li>API contract: <code>shared/contracts/api.md</code></li>
+            <li>DB migrate: <code>php scripts/db_migrate.php</code></li>
+            <li>AI service: <code>http://127.0.0.1:8001</code></li>
+          </ul></div>`;
+      }
+
+      async function show(name) {
+        buttons.forEach(b => b.classList.toggle('active', b.dataset.view === name));
+        if (name === 'sessions') return renderSessions();
+        if (name === 'settings') return renderSettings();
+        try {
+          const catalog = await loadCatalog();
+          if (name === 'palette') return renderPalette(catalog);
+          if (name === 'fabrics') return renderFabrics(catalog);
+          return renderDashboard(catalog);
+        } catch (e) {
+          view.innerHTML = `<div class="card"><h2>API unavailable</h2>
+            <p class="muted">${e.message}</p>
+            <p>Run <code>php scripts/db_migrate.php</code> then open the backend URL.</p></div>`;
+        }
+      }
+
+      buttons.forEach(b => b.addEventListener('click', () => show(b.dataset.view)));
+      show('dashboard');
+    </script>
+  </body>
+</html>

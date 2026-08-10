@@ -1,0 +1,8 @@
+[
+  { "id": "uniform", "label": "Uniform", "description": "Official & workwear", "sort_order": 1 },
+  { "id": "casual", "label": "Casual Wear", "description": "Everyday comfort", "sort_order": 2 },
+  { "id": "smart_casual", "label": "Smart Casual", "description": "Office-ready", "sort_order": 3 },
+  { "id": "formal", "label": "Formal Wear", "description": "Events & occasions", "sort_order": 4 },
+  { "id": "active", "label": "Active Wear", "description": "Movement-first", "sort_order": 5 },
+  { "id": "fabrics", "label": "Fabrics Only", "description": "Textile focus", "sort_order": 6 }
+]

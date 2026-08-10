@@ -28,3 +28,4 @@ database/*.sqlite
 database/*.sqlite-*
 /tmp/ptri-*.log
 /tmp/ptri-*.pid
+.qa-shots/

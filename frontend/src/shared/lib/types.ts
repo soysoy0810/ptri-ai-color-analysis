@@ -1,6 +1,7 @@
 /** Kiosk flow — camera guide, lighting and scan are merged into one auto-detect step. */
 export type StepId =
   | 'welcome'
+  | 'profile'
   | 'cameraGuide'
   | 'analysis'
   | 'top20'

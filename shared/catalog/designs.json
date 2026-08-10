@@ -1,4 +1,8 @@
 [
+  { "id": "fp1", "category_id": "filipiniana", "name": "Barong Tagalog", "style_code": "A" },
+  { "id": "fp2", "category_id": "filipiniana", "name": "Filipiniana Terno", "style_code": "B" },
+  { "id": "fp3", "category_id": "filipiniana", "name": "Maria Clara Blouse", "style_code": "C" },
+  { "id": "fp4", "category_id": "filipiniana", "name": "Modern Filipiniana", "style_code": "D" },
   { "id": "u1", "category_id": "uniform", "name": "Classic Polo", "style_code": "A" },
   { "id": "u2", "category_id": "uniform", "name": "Barong-Inspired Shirt", "style_code": "B" },
   { "id": "u3", "category_id": "uniform", "name": "Tailored Blouse", "style_code": "C" },

@@ -9,6 +9,7 @@ import { DESIGNS, FABRICS } from '../data/catalog';
 import { garmentForDesign } from '../data/garments';
 import type { FaceRegion, LightingInfo, PaletteColor, SelectionMode } from '../shared/lib/types';
 import { WelcomeScreen } from '../features/welcome/WelcomeScreen';
+import { ProfileScreen } from '../features/profile/ProfileScreen';
 import { AutoScanScreen } from '../features/camera/AutoScanScreen';
 import { AnalysisScreen } from '../features/analysis/AnalysisScreen';
 import { Top20Screen } from '../features/colors/Top20Screen';
@@ -48,14 +49,19 @@ export default function App() {
     window.setTimeout(() => setToast(''), 2500);
   }, []);
 
-  /** Guide step 1→2: HOME tap starts a guest session, then CAMERA GUIDE. */
-  async function startFromHome() {
+  /** HOME tap → visitor info screen. */
+  function startFromHome() {
+    goTo('profile');
+  }
+
+  /** Visitor info confirmed → create session with their details, then camera. */
+  async function startSession() {
     try {
       const res = await api.createSession({
-        fullName: 'Guest',
-        ageRange: 'Prefer not to say',
-        gender: 'prefer_not',
-        email: '',
+        fullName: state.profile.fullName.trim() || 'Guest',
+        ageRange: state.profile.ageRange || 'Prefer not to say',
+        gender: state.profile.gender || 'prefer_not',
+        email: state.profile.email,
       });
       dispatch({ type: 'SET_SESSION', sessionId: res.session_id });
     } catch {
@@ -160,9 +166,19 @@ export default function App() {
     case 'welcome':
       body = <WelcomeScreen onStart={startFromHome} />;
       break;
+    case 'profile':
+      body = (
+        <ProfileScreen
+          profile={state.profile}
+          onChange={(profile) => dispatch({ type: 'SET_PROFILE', profile })}
+          onContinue={startSession}
+        />
+      );
+      footer = <NavButtons onBack={() => goTo('welcome')} hideNext />;
+      break;
     case 'cameraGuide':
       body = <AutoScanScreen onCapture={handleCapture} />;
-      footer = <NavButtons onBack={() => goTo('welcome')} hideNext />;
+      footer = <NavButtons onBack={() => goTo('profile')} hideNext />;
       break;
     case 'analysis':
       body = (

@@ -1,4 +1,5 @@
 [
+  { "id": "filipiniana", "label": "Filipiniana", "description": "Filipino Heritage Wear", "sort_order": 0 },
   { "id": "uniform", "label": "Uniform", "description": "Professional & Official", "sort_order": 1 },
   { "id": "casual", "label": "Casual", "description": "Everyday Comfort", "sort_order": 2 },
   { "id": "smart_casual", "label": "Smart Casual", "description": "Semi-Formal Looks", "sort_order": 3 },

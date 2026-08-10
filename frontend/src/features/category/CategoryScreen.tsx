@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import {
   BriefcaseBusiness,
   Dumbbell,
+  Flower2,
   LayoutGrid,
   Shirt,
   Sparkles,
@@ -15,6 +16,7 @@ interface CategoryScreenProps {
 }
 
 const ICONS: Record<string, typeof Shirt> = {
+  filipiniana: Flower2,
   uniform: Shirt,
   casual: StretchHorizontal,
   smart_casual: Sparkles,

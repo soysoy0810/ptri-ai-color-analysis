@@ -6,7 +6,9 @@ export type GarmentKey =
   | 'linen-shirt'
   | 'formal-shirt'
   | 'active-tee'
-  | 'barong';
+  | 'barong'
+  | 'terno'
+  | 'filipiniana-blouse';
 
 const BASE = `${import.meta.env.BASE_URL}garments`;
 
@@ -17,6 +19,8 @@ export const GARMENT_SRC: Record<GarmentKey, string> = {
   'formal-shirt': `${BASE}/garment-formal-shirt.png`,
   'active-tee': `${BASE}/garment-active-tee.png`,
   barong: `${BASE}/garment-barong.png`,
+  terno: `${BASE}/garment-terno.png`,
+  'filipiniana-blouse': `${BASE}/garment-filipiniana-blouse.png`,
 };
 
 /** Light neutral versions used for fabric-color tinting in the try-on */
@@ -27,10 +31,17 @@ export const GARMENT_BASE_SRC: Record<GarmentKey, string> = {
   'formal-shirt': `${BASE}/garment-formal-shirt-base.png`,
   'active-tee': `${BASE}/garment-active-tee-base.png`,
   barong: `${BASE}/garment-barong-base.png`,
+  terno: `${BASE}/garment-terno-base.png`,
+  'filipiniana-blouse': `${BASE}/garment-filipiniana-blouse-base.png`,
 };
 
 /** Map each catalog design id → garment photo */
 export const DESIGN_GARMENT: Record<string, GarmentKey> = {
+  // Filipiniana
+  fp1: 'barong',
+  fp2: 'terno',
+  fp3: 'filipiniana-blouse',
+  fp4: 'terno',
   // Uniform
   u1: 'polo',
   u2: 'barong',

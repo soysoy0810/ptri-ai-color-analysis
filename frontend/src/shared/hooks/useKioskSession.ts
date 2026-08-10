@@ -9,6 +9,7 @@ import type { SessionAction, SessionState, StepId } from '../lib/types';
  */
 export const STEPS: StepId[] = [
   'welcome',
+  'profile',
   'cameraGuide',
   'analysis',
   'top20',
@@ -25,6 +26,7 @@ export const STEPS: StepId[] = [
 
 export const STEP_LABELS: Record<StepId, string> = {
   welcome: 'WELCOME',
+  profile: 'ABOUT YOU',
   cameraGuide: 'CAMERA GUIDE',
   analysis: 'ANALYZING',
   top20: 'YOUR TOP 20 COLORS',
@@ -43,9 +45,9 @@ const initialState: SessionState = {
   step: 'welcome',
   sessionId: null,
   profile: {
-    fullName: 'Guest',
+    fullName: '',
     ageRange: '',
-    gender: 'prefer_not',
+    gender: '',
     email: '',
   },
   captureDataUrl: null,

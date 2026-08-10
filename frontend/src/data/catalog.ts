@@ -59,8 +59,8 @@ export const ANALYSIS_STEPS = [
 
 export const CAMERA_GUIDE = [
   { id: 'glasses', label: 'No glasses', tip: 'Remove glasses if possible' },
+  { id: 'still', label: 'Hold still', tip: 'Stay still while we prepare the scan' },
   { id: 'forward', label: 'Face forward', tip: 'Face the camera directly' },
-  { id: 'hair', label: 'Hair away', tip: 'Keep hair away from the face' },
   { id: 'light', label: 'Good lighting', tip: 'Stand in even lighting' },
 ] as const;
 

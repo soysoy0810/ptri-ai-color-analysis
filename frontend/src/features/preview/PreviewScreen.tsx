@@ -1,5 +1,7 @@
-import { BACKGROUNDS, CATEGORIES, DESIGNS, FABRICS } from '../../data/catalog';
+import { CATEGORIES, DESIGNS, FABRICS } from '../../data/catalog';
+import { garmentForDesign } from '../../data/garments';
 import type { PaletteColor } from '../../shared/lib/types';
+import { LookComposer } from '../../shared/ui/LookComposer';
 
 interface PreviewScreenProps {
   captureDataUrl: string | null;
@@ -22,53 +24,33 @@ export function PreviewScreen({
   onChangeBackground,
   onViewDetails,
 }: PreviewScreenProps) {
-  const bg = BACKGROUNDS.find((b) => b.id === backgroundId) || BACKGROUNDS[0];
   const fabric = FABRICS.find((f) => f.id === fabricId);
   const garmentColor = fabric?.hex || selectedColors[0]?.hex || '#1E4D8C';
   const category = CATEGORIES.find((c) => c.id === categoryId);
   const design = (categoryId && DESIGNS[categoryId]?.find((d) => d.id === designId)) || undefined;
+  const garmentKey = garmentForDesign(designId);
 
   return (
     <section className="screen">
       <h1 className="screen-title">Preview Your Look</h1>
+      <p className="screen-sub">Your face with the selected garment, fabric color, and scene.</p>
 
-      <div className="mt-1 grid grid-cols-1 gap-3">
-        {/* Visual preview (dominant, like board right panel) */}
-        <div className="relative min-h-[300px] overflow-hidden rounded-3xl shadow-kiosk">
-          <div
-            className="absolute inset-0"
-            style={{
-              background: `linear-gradient(165deg, ${bg.tone} 0%, #dbe4ee 45%, #f8fafc 100%)`,
-            }}
-          />
-          {/* Garment body */}
-          <div
-            className="absolute bottom-[6%] left-1/2 h-[52%] w-[62%] -translate-x-1/2 rounded-[22px_22px_46%_46%] shadow-xl"
-            style={{ background: garmentColor }}
-          >
-            <div className="absolute left-1/2 top-3 -translate-x-1/2 text-[10px] font-extrabold tracking-[0.2em] text-white/80">
-              PTRI
-            </div>
-          </div>
-          {captureDataUrl ? (
-            <img
-              src={captureDataUrl}
-              alt="Your face preview"
-              className="absolute left-1/2 top-[10%] aspect-square w-[44%] -translate-x-1/2 rounded-full border-4 border-white object-cover shadow-lg"
-            />
-          ) : (
-            <div className="absolute left-1/2 top-[10%] aspect-square w-[44%] -translate-x-1/2 rounded-full border-4 border-white bg-slate-300 shadow-lg" />
-          )}
-        </div>
+      <div className="mt-2 grid gap-3">
+        <LookComposer
+          captureDataUrl={captureDataUrl}
+          garmentKey={garmentKey}
+          fabricHex={garmentColor}
+          backgroundId={backgroundId}
+          designName={design?.name}
+        />
 
-        {/* Selections summary */}
-        <div className="rounded-2xl border border-line bg-white p-4">
+        <div className="rounded-2xl border border-line bg-white p-4 shadow-sm">
           <h2 className="mb-3 text-[11px] font-extrabold uppercase tracking-wide text-muted">
             Your Selections
           </h2>
           <div className="space-y-2 text-sm">
             <Row label="Category" value={category?.label || '—'} />
-            <Row label="Design" value={design ? `${design.name}` : '—'} />
+            <Row label="Design" value={design ? design.name : '—'} />
             <Row label="Fabric" value={fabric ? `${fabric.code} ${fabric.name}` : '—'} />
           </div>
           <div className="mt-3">
@@ -77,7 +59,7 @@ export function PreviewScreen({
               {selectedColors.slice(0, 6).map((c) => (
                 <span
                   key={c.id}
-                  className="h-7 w-7 rounded-full border border-black/10"
+                  className="h-8 w-8 rounded-full border border-black/10 shadow-sm"
                   style={{ background: c.hex }}
                   title={c.name}
                 />

@@ -11,7 +11,7 @@ export function Top20Screen({ colors, onSuggestTop5 }: Top20ScreenProps) {
     <section className="screen">
       <h1 className="screen-title">These are 20 colors that suit you best.</h1>
 
-      <div className="mt-2 grid grid-cols-4 gap-2.5">
+      <div className="mt-3 grid grid-cols-4 gap-2.5">
         {colors.slice(0, 20).map((color) => (
           <div
             key={color.id}
@@ -24,10 +24,10 @@ export function Top20Screen({ colors, onSuggestTop5 }: Top20ScreenProps) {
 
       <button
         type="button"
-        className="btn mt-5 w-full border-2 border-accent bg-white text-accent hover:bg-accent-soft"
+        className="btn mt-6 w-full border-2 border-accent bg-white text-accent hover:bg-accent-soft"
         onClick={onSuggestTop5}
       >
-        <Star className="h-4 w-4 fill-accent" />
+        <Star className="h-4 w-4 fill-accent text-accent" />
         AI SUGGESTS TOP 5 COLORS FOR YOU
       </button>
     </section>

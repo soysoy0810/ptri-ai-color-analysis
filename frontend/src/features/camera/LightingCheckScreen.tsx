@@ -28,10 +28,14 @@ export function LightingCheckScreen({ onComplete }: LightingCheckScreenProps) {
       const result = assessLighting(frame.canvas);
       setLighting(result);
       setChecking(false);
-    }, 1600);
+      // Auto-continue when lighting is usable
+      if (result.status !== 'poor') {
+        window.setTimeout(() => onComplete(result), 900);
+      }
+    }, 1400);
 
     return () => window.clearTimeout(timer);
-  }, [ready, error, captureFrame]);
+  }, [ready, error, captureFrame, onComplete]);
 
   const status = lighting?.status ?? 'checking';
   const statusLabel =

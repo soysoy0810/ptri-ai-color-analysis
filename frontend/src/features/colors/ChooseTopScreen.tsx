@@ -17,6 +17,7 @@ export function ChooseTopScreen({
   onToggleColor,
 }: ChooseTopScreenProps) {
   const limit = mode === 'top10' ? 10 : 5;
+  const activeTab = mode === 'top10' ? 'top10' : 'top5';
 
   return (
     <section className="screen">
@@ -33,9 +34,7 @@ export function ChooseTopScreen({
             key={tab.id}
             type="button"
             className={`min-h-touch rounded-xl text-sm font-extrabold ${
-              mode === tab.id || (mode === 'custom' && tab.id === 'top5')
-                ? 'bg-navy text-white shadow-sm'
-                : 'bg-transparent text-navy'
+              activeTab === tab.id ? 'bg-navy text-white shadow-sm' : 'bg-transparent text-navy'
             }`}
             onClick={() => onModeChange(tab.id)}
           >
@@ -52,14 +51,14 @@ export function ChooseTopScreen({
               key={color.id}
               type="button"
               className={`relative aspect-square rounded-xl shadow-[inset_0_0_0_1px_rgba(0,0,0,0.08)] ${
-                active ? 'outline outline-[3px] outline-accent outline-offset-2' : ''
+                active ? 'outline outline-[3px] outline-navy outline-offset-2' : ''
               }`}
               style={{ background: color.hex }}
               onClick={() => onToggleColor(color, limit)}
               aria-label={color.name}
             >
               {active ? (
-                <span className="absolute right-1.5 top-1.5 grid h-6 w-6 place-items-center rounded-full bg-accent text-white shadow">
+                <span className="absolute right-1.5 top-1.5 grid h-6 w-6 place-items-center rounded-full bg-navy text-white shadow">
                   <Check className="h-3.5 w-3.5" strokeWidth={3} />
                 </span>
               ) : null}

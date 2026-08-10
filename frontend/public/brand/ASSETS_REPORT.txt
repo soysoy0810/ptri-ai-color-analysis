@@ -1,0 +1,48 @@
+DOST-PTRI Brand Assets Report
+Generated: 2026-08-10
+
+CHOSEN LOGO
+-----------
+File: dost-ptri-logo.png
+Size: 288522 bytes (282 KB)
+Format: PNG image data, 1024 x 1023, 8-bit/color RGBA
+Source: /Applications/XAMPP/xamppfiles/htdocs/ptri-kms/public/images/ptri-logo-source.png
+Rationale: Highest-resolution local copy of the official DOST agency-style PTRI mark
+(four interlocking circles + central flask). Valid PNG, well above 5KB.
+
+DOST SEAL
+---------
+File: dost-seal.png
+Size: 36853 bytes (36 KB)
+Format: PNG image data, 960 x 960, 8-bit/color RGBA
+Source: Wikimedia Commons Special:FilePath/DOST_seal.svg?width=512
+        (https://commons.wikimedia.org/wiki/Special:FilePath/DOST_seal.svg?width=512)
+
+SEARCH RESULTS (disk)
+---------------------
+Found under ptri-kms/public/images/:
+  - dost-ptri-logo.png (34453 B, 256x256 PNG)
+  - dost-ptri-logo-print.png (73240 B, 640x640 PNG)
+  - dost-ptri-logo-print.jpg (52321 B, 640x640 JPEG)
+  - ptri-logo.png (275232 B, 1024x1023 PNG)
+  - ptri-logo-source.png (288522 B, 1024x1023 PNG)  <-- chosen
+  - ptri-logo-transparent.png (288522 B, 1024x1023 PNG)
+  - ptri-logo.svg / ptri-logo-icon.svg (small placeholder SVGs, <1KB)
+
+Also found:
+  - /Users/irene/.cursor/projects/.../assets/dost-ptri-logo.png (1087714 B)
+    Different circular gear/textile seal design; not used in favor of ptri-kms official mark.
+
+ptri_kms path (underscore): no matching directory / images.
+
+DOWNLOAD ATTEMPTS
+-----------------
+- upload.wikimedia.org/.../240px-DOST_seal.svg.png : FAIL (HTTP 400)
+- ptri.dost.gov.ph/images/logo.png : FAIL (HTTP 403)
+- www.dost.gov.ph/images/logo.png : FAIL (returned HTML, not image)
+- raw.githubusercontent.com/govph/opengov/master/img/dost.png : FAIL (HTTP 404)
+- commons.wikimedia.org Special:FilePath/DOST_seal.svg?width=512 : SUCCESS -> dost-seal.png
+
+NOTES
+-----
+Existing brand/dost-ptri-official.png is a 179-byte HTML 403 stub (not a real image).

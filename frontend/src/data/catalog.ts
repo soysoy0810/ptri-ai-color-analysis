@@ -69,6 +69,6 @@ export const CAMERA_GUIDE = [
 /** Full phrases as shown on the approved PTRI home mockup */
 export const FEATURE_BULLETS = [
   { id: 'ai', title: 'AI-Powered Color Analysis' },
-  { id: 'textiles', title: 'PTRI Textiles & Innovation' },
+  { id: 'textiles', title: 'Textile Research & Innovation' },
   { id: 'personal', title: 'Personalized Recommendations' },
 ] as const;

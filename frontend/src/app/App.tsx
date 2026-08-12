@@ -3,6 +3,7 @@ import { Shell } from '../shared/ui/Shell';
 import { NavButtons } from '../shared/ui/NavButtons';
 import { STEPS, useKioskSession } from '../shared/hooks/useKioskSession';
 import { api } from '../shared/api/client';
+import { setLiveDesigns } from '../shared/lib/catalogStore';
 import {
   analyzeSkinTone,
   averageImageColor,
@@ -10,7 +11,8 @@ import {
   setActivePalette,
   type SkinProfile,
 } from '../shared/lib/colorEngine';
-import { DESIGNS, FABRICS } from '../data/catalog';
+import { FABRICS } from '../data/catalog';
+import { getDesignById } from '../shared/lib/catalogStore';
 import type { FaceRegion, LightingInfo, PaletteColor, SelectionMode, StepId } from '../shared/lib/types';
 import { WelcomeScreen } from '../features/welcome/WelcomeScreen';
 import { ProfileScreen } from '../features/profile/ProfileScreen';
@@ -42,6 +44,8 @@ export default function App() {
       .then((catalog) => {
         const palette = catalog?.palette as PaletteColor[] | undefined;
         if (palette?.length) setActivePalette(palette);
+        const designs = catalog?.designs as Parameters<typeof setLiveDesigns>[0] | undefined;
+        if (designs?.length) setLiveDesigns(designs);
       })
       .catch(() => {
         /* offline — bundled palette stays active */
@@ -60,6 +64,19 @@ export default function App() {
     const previewName = params.get('name');
     if (previewName) {
       dispatch({ type: 'SET_PROFILE', profile: { fullName: previewName } });
+    }
+    if (preview === 'results') {
+      dispatch({
+        type: 'SET_PROFILE',
+        profile: { fullName: previewName || 'Guest', gender: 'female' },
+      });
+      dispatch({ type: 'SET_CATEGORY', categoryId: 'filipiniana' });
+      dispatch({ type: 'SET_DESIGN', designId: params.get('design') || 'fp2' });
+      dispatch({ type: 'SET_BACKGROUND', backgroundId: params.get('bg') || 'outdoor' });
+      dispatch({
+        type: 'SET_SELECTED_COLORS',
+        colors: [{ id: 'c10', name: 'Seafoam', hex: '#7FB9A8', sort_order: 10 }],
+      });
     }
     if (preview && STEPS.includes(preview)) goTo(preview);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot deep link on load
@@ -161,6 +178,7 @@ export default function App() {
       if (state.sessionId) {
         await api.completeSession(state.sessionId, {
           selected_colors: state.selectedColors,
+          top20: state.top20,
           selection_mode: state.selectionMode,
           category_id: state.categoryId,
           design_id: state.designId,
@@ -340,11 +358,7 @@ export default function App() {
             state.selectedColors[0]?.hex ||
             '#1E4D8C'
           }
-          designName={
-            state.categoryId && state.designId
-              ? DESIGNS[state.categoryId]?.find((d) => d.id === state.designId)?.name
-              : undefined
-          }
+          designName={getDesignById(state.designId)?.name}
           onEmailChange={(email) => dispatch({ type: 'SET_PROFILE', profile: { email } })}
           onSendEmail={async () => {
             if (!state.sessionId) throw new Error('Session unavailable offline.');

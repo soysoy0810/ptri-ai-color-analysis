@@ -3,10 +3,17 @@ import { motion } from 'framer-motion';
 import {
   BACKGROUND_SCENES,
   BACKGROUND_SRC,
+  GARMENT_BASE_SRC,
+  HERITAGE_GARMENTS,
   MODEL_SRC,
+  TEMPLATE_TORSO_MASK,
+  TORSO_MASK,
+  FACE_ON_MODEL,
+  tryOnModelSrc,
   modelGenderFromProfile,
   type GarmentKey,
   type ModelGender,
+  type TorsoMask,
 } from '../../data/garments';
 import type { FaceRegion } from '../lib/types';
 
@@ -18,21 +25,40 @@ interface LookComposerProps {
   backgroundId: string;
   designName?: string;
   gender?: string | null;
+  /** Admin-uploaded try-on garment PNG (optional) */
+  tryonImageUrl?: string | null;
   className?: string;
-  /** Edge-to-edge kiosk hero — no rounded frame */
   fullBleed?: boolean;
-  /** Show the full composed frame without cropping (results strip) */
   fitContain?: boolean;
 }
 
 const OUT_W = 720;
 const OUT_H = 900;
-const BUST_CROP = 0.62;
+/** Head → upper waist; arms and hands stay in frame */
+const PORTRAIT_CROP = 0.58;
 
-const FACE_ON_BUST: Record<ModelGender, { top: number; width: number }> = {
-  female: { top: 0.05, width: 0.32 },
-  male: { top: 0.048, width: 0.31 },
+const FACE_ON_PORTRAIT: Record<ModelGender, { top: number; width: number }> = {
+  female: { top: 0.045, width: 0.3 },
+  male: { top: 0.048, width: 0.29 },
 };
+
+const GARMENT_NECK_ANCHOR: Record<GarmentKey, number> = {
+  polo: 0.14,
+  'active-tee': 0.13,
+  'linen-shirt': 0.13,
+  'formal-shirt': 0.12,
+  barong: 0.11,
+  'collar-blouse': 0.12,
+  terno: 0.09,
+  'filipiniana-blouse': 0.1,
+};
+
+interface Rect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -54,14 +80,8 @@ function colorDist(r: number, g: number, b: number, ref: [number, number, number
   return Math.abs(r - ref[0]) + Math.abs(g - ref[1]) + Math.abs(b - ref[2]);
 }
 
-function isSkin(r: number, g: number, b: number): boolean {
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  return r > 50 && g > 28 && b > 12 && r >= g - 15 && max - min > 8;
-}
-
-function cropModelBust(model: HTMLImageElement): HTMLCanvasElement {
-  const cropH = Math.round(model.height * BUST_CROP);
+function cropPortraitTop(model: HTMLImageElement): HTMLCanvasElement {
+  const cropH = Math.round(model.height * PORTRAIT_CROP);
   const canvas = document.createElement('canvas');
   canvas.width = model.width;
   canvas.height = cropH;
@@ -69,7 +89,21 @@ function cropModelBust(model: HTMLImageElement): HTMLCanvasElement {
   return canvas;
 }
 
-function removeEdgeBackground(canvas: HTMLCanvasElement): void {
+function isSkinPixel(r: number, g: number, b: number): boolean {
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  return r > 55 && g > 32 && b > 18 && max - min > 10 && r >= g - 12;
+}
+
+function modelToCanvas(model: HTMLImageElement): HTMLCanvasElement {
+  const canvas = document.createElement('canvas');
+  canvas.width = model.width;
+  canvas.height = model.height;
+  canvas.getContext('2d')!.drawImage(model, 0, 0);
+  return canvas;
+}
+
+function removeEdgeBackground(canvas: HTMLCanvasElement, tolerance = 44): void {
   const ctx = canvas.getContext('2d')!;
   const w = canvas.width;
   const h = canvas.height;
@@ -87,7 +121,7 @@ function removeEdgeBackground(canvas: HTMLCanvasElement): void {
     if (visited[i]) return;
     visited[i] = 1;
     const pi = i * 4;
-    if (colorDist(px[pi], px[pi + 1], px[pi + 2], bg) < 40) {
+    if (colorDist(px[pi], px[pi + 1], px[pi + 2], bg) < tolerance) {
       remove[i] = 1;
       queue.push(i);
     }
@@ -118,46 +152,204 @@ function removeEdgeBackground(canvas: HTMLCanvasElement): void {
   ctx.putImageData(frame, 0, 0);
 }
 
-/** Erase stock model face so only the visitor face shows — no double face */
-function eraseModelFace(bust: HTMLCanvasElement, gender: ModelGender): void {
-  const ctx = bust.getContext('2d')!;
-  const w = bust.width;
-  const h = bust.height;
-  const spec = FACE_ON_BUST[gender];
-  const cx = w / 2;
-  const cy = h * (spec.top + spec.width * 0.55);
-  const rx = w * spec.width * 0.5;
-  const ry = w * spec.width * 0.56;
-  ctx.save();
-  ctx.globalCompositeOperation = 'destination-out';
-  ctx.beginPath();
-  ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-}
-
-function tintModelShirt(canvas: HTMLCanvasElement, fabricHex: string): void {
+function recolorTorso(canvas: HTMLCanvasElement, mask: TorsoMask, fabricHex: string): void {
   const ctx = canvas.getContext('2d')!;
   const w = canvas.width;
   const h = canvas.height;
   const frame = ctx.getImageData(0, 0, w, h);
   const px = frame.data;
   const [tr, tg, tb] = hexToRgb(fabricHex);
+  const topY = h * mask.top;
+  const bottomY = h * mask.bottom;
 
-  for (let y = Math.round(h * 0.34); y < Math.round(h * 0.88); y += 1) {
-    for (let x = Math.round(w * 0.14); x < Math.round(w * 0.86); x += 1) {
+  for (let y = 0; y < h; y += 1) {
+    if (y < topY || y > bottomY) continue;
+    const rowT = (y - topY) / (bottomY - topY);
+    const halfW = (w * (mask.widthTop + (mask.widthBottom - mask.widthTop) * rowT)) / 2;
+    const cx = w / 2;
+    for (let x = Math.floor(cx - halfW); x < Math.ceil(cx + halfW); x += 1) {
+      if (x < 0 || x >= w) continue;
       const i = (y * w + x) * 4;
-      if (px[i + 3] < 30) continue;
-      const r = px[i];
-      const g = px[i + 1];
-      const b = px[i + 2];
-      if (isSkin(r, g, b)) continue;
-      if (r + g + b < 55) continue;
-      const lum = (r * 0.299 + g * 0.587 + b * 0.114) / 255;
-      const mix = 0.65;
-      px[i] = Math.round(tr * lum * mix + r * (1 - mix));
-      px[i + 1] = Math.round(tg * lum * mix + g * (1 - mix));
-      px[i + 2] = Math.round(tb * lum * mix + b * (1 - mix));
+      if (px[i + 3] < 20) continue;
+      const lum = (px[i] * 0.299 + px[i + 1] * 0.587 + px[i + 2] * 0.114) / 255;
+      const shade = 0.48 + lum * 0.52;
+      px[i] = Math.min(255, Math.round(tr * shade));
+      px[i + 1] = Math.min(255, Math.round(tg * shade));
+      px[i + 2] = Math.min(255, Math.round(tb * shade));
+    }
+  }
+  ctx.putImageData(frame, 0, 0);
+}
+
+function trimToAlphaBounds(canvas: HTMLCanvasElement, pad = 4): HTMLCanvasElement {
+  const ctx = canvas.getContext('2d')!;
+  const { width, height } = canvas;
+  const data = ctx.getImageData(0, 0, width, height).data;
+  let minX = width;
+  let minY = height;
+  let maxX = 0;
+  let maxY = 0;
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      if (data[(y * width + x) * 4 + 3] > 24) {
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+      }
+    }
+  }
+
+  if (maxX <= minX || maxY <= minY) return canvas;
+
+  minX = Math.max(0, minX - pad);
+  minY = Math.max(0, minY - pad);
+  maxX = Math.min(width - 1, maxX + pad);
+  maxY = Math.min(height - 1, maxY + pad);
+
+  const out = document.createElement('canvas');
+  out.width = maxX - minX + 1;
+  out.height = maxY - minY + 1;
+  out.getContext('2d')!.drawImage(canvas, minX, minY, out.width, out.height, 0, 0, out.width, out.height);
+  return out;
+}
+
+function removeDarkBackground(canvas: HTMLCanvasElement, threshold = 40): void {
+  const ctx = canvas.getContext('2d')!;
+  const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const px = frame.data;
+  for (let i = 0; i < px.length; i += 4) {
+    if (px[i] < threshold && px[i + 1] < threshold && px[i + 2] < threshold) {
+      px[i + 3] = 0;
+    }
+  }
+  ctx.putImageData(frame, 0, 0);
+}
+
+function tintGarmentCanvas(canvas: HTMLCanvasElement, fabricHex: string): void {
+  const ctx = canvas.getContext('2d')!;
+  const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const px = frame.data;
+  const [tr, tg, tb] = hexToRgb(fabricHex);
+
+  for (let i = 0; i < px.length; i += 4) {
+    if (px[i + 3] < 20) continue;
+    const lum = (px[i] * 0.299 + px[i + 1] * 0.587 + px[i + 2] * 0.114) / 255;
+    const shade = 0.55 + lum * 0.45;
+    px[i] = Math.min(255, Math.round(tr * shade));
+    px[i + 1] = Math.min(255, Math.round(tg * shade));
+    px[i + 2] = Math.min(255, Math.round(tb * shade));
+  }
+  ctx.putImageData(frame, 0, 0);
+}
+
+async function loadTintedGarment(
+  garmentKey: GarmentKey,
+  fabricHex: string,
+  customUrl?: string | null,
+): Promise<HTMLCanvasElement> {
+  const img = await loadImage(customUrl || GARMENT_BASE_SRC[garmentKey]);
+  const canvas = document.createElement('canvas');
+  canvas.width = img.width;
+  canvas.height = img.height;
+  const ctx = canvas.getContext('2d')!;
+  ctx.drawImage(img, 0, 0);
+  removeDarkBackground(canvas);
+  tintGarmentCanvas(canvas, fabricHex);
+  return trimToAlphaBounds(canvas);
+}
+
+function sourceSize(img: CanvasImageSource): { w: number; h: number } {
+  if (img instanceof HTMLImageElement) {
+    return { w: img.naturalWidth, h: img.naturalHeight };
+  }
+  if (img instanceof HTMLCanvasElement) {
+    return { w: img.width, h: img.height };
+  }
+  if (typeof ImageBitmap !== 'undefined' && img instanceof ImageBitmap) {
+    return { w: img.width, h: img.height };
+  }
+  return { w: OUT_W, h: OUT_H };
+}
+
+function drawContainInBox(
+  ctx: CanvasRenderingContext2D,
+  img: CanvasImageSource,
+  box: Rect,
+): Rect {
+  const { w: sw, h: sh } = sourceSize(img);
+  const scale = Math.min(box.w / sw, box.h / sh);
+  const rw = sw * scale;
+  const rh = sh * scale;
+  const x = box.x + (box.w - rw) / 2;
+  const y = box.y + (box.h - rh) / 2;
+  ctx.drawImage(img, x, y, rw, rh);
+  return { x, y, w: rw, h: rh };
+}
+
+function drawCoverBottom(
+  ctx: CanvasRenderingContext2D,
+  img: CanvasImageSource,
+  box: Rect,
+): Rect {
+  const { w: sw, h: sh } = sourceSize(img);
+  const scale = Math.max(box.w / sw, box.h / sh);
+  const rw = sw * scale;
+  const rh = sh * scale;
+  const x = box.x + (box.w - rw) / 2;
+  const y = box.y + box.h - rh;
+  ctx.drawImage(img, x, y, rw, rh);
+  return { x, y, w: rw, h: rh };
+}
+
+function applyFaceFeather(canvas: HTMLCanvasElement): void {
+  const ctx = canvas.getContext('2d')!;
+  const w = canvas.width;
+  const h = canvas.height;
+  const cx = w / 2;
+  const cy = h * 0.44;
+  const rx = w * 0.4;
+  const ry = h * 0.46;
+
+  const mask = document.createElement('canvas');
+  mask.width = w;
+  mask.height = h;
+  const mctx = mask.getContext('2d')!;
+  const grad = mctx.createRadialGradient(cx, cy, rx * 0.2, cx, cy, rx);
+  grad.addColorStop(0, 'rgba(255,255,255,1)');
+  grad.addColorStop(0.82, 'rgba(255,255,255,0.95)');
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  mctx.fillStyle = grad;
+  mctx.beginPath();
+  mctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+  mctx.fill();
+
+  ctx.globalCompositeOperation = 'destination-in';
+  ctx.drawImage(mask, 0, 0);
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+function softenFaceBackdrop(canvas: HTMLCanvasElement): void {
+  const ctx = canvas.getContext('2d')!;
+  const w = canvas.width;
+  const h = canvas.height;
+  const frame = ctx.getImageData(0, 0, w, h);
+  const px = frame.data;
+  const cx = w / 2;
+  const cy = h / 2;
+  const maxR = Math.min(w, h) * 0.52;
+
+  for (let y = 0; y < h; y += 1) {
+    for (let x = 0; x < w; x += 1) {
+      const i = (y * w + x) * 4;
+      if (px[i + 3] < 10) continue;
+      const dx = (x - cx) / maxR;
+      const dy = (y - cy) / maxR;
+      const edge = dx * dx + dy * dy;
+      if (edge > 1 && !isSkinPixel(px[i], px[i + 1], px[i + 2])) {
+        px[i + 3] = 0;
+      }
     }
   }
   ctx.putImageData(frame, 0, 0);
@@ -167,20 +359,63 @@ function extractVisitorFace(
   capture: HTMLImageElement,
   faceBox: FaceRegion | null | undefined,
 ): HTMLCanvasElement {
-  const fb = faceBox ?? { x: 0.28, y: 0.1, width: 0.44, height: 0.5 };
-  const left = Math.max(0, (fb.x - fb.width * 0.12) * capture.width);
-  const top = Math.max(0, (fb.y - fb.height * 0.28) * capture.height);
-  const right = Math.min(capture.width, (fb.x + fb.width * 1.12) * capture.width);
-  const bottom = Math.min(capture.height, (fb.y + fb.height * 1.05) * capture.height);
+  const fb = faceBox ?? { x: 0.28, y: 0.12, width: 0.44, height: 0.42 };
+  const padX = fb.width * 0.05;
+  const padTop = fb.height * 0.22;
+  const padBottom = fb.height * 0.04;
+  const left = Math.max(0, (fb.x - padX) * capture.width);
+  const top = Math.max(0, (fb.y - padTop) * capture.height);
+  const right = Math.min(capture.width, (fb.x + fb.width + padX) * capture.width);
+  const bottom = Math.min(capture.height, (fb.y + fb.height + padBottom) * capture.height);
 
-  const outW = 420;
-  const outH = Math.max(1, Math.round((outW * (bottom - top)) / (right - left)));
+  const cropW = Math.max(1, right - left);
+  const cropH = Math.max(1, bottom - top);
+  const outW = 480;
+  const outH = Math.max(1, Math.round((outW * cropH) / cropW));
   const canvas = document.createElement('canvas');
   canvas.width = outW;
   canvas.height = outH;
   const ctx = canvas.getContext('2d')!;
-  ctx.drawImage(capture, left, top, right - left, bottom - top, 0, 0, outW, outH);
+  ctx.drawImage(capture, left, top, cropW, cropH, 0, 0, outW, outH);
+  softenFaceBackdrop(canvas);
+  applyFaceFeather(canvas);
   return canvas;
+}
+
+function eraseModelFace(canvas: HTMLCanvasElement, faceSpec: { top: number; width: number }): void {
+  const ctx = canvas.getContext('2d')!;
+  const w = canvas.width;
+  const h = canvas.height;
+  const fW = w * faceSpec.width;
+  const fH = fW * 1.2;
+  const cx = w / 2;
+  const cy = h * faceSpec.top + fH * 0.48;
+  ctx.save();
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, fW * 0.54, fH * 0.58, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function paintVisitorFace(
+  target: CanvasRenderingContext2D,
+  layout: Rect,
+  capture: HTMLImageElement,
+  faceBox: FaceRegion | null | undefined,
+  faceSpec: { top: number; width: number },
+): void {
+  const face = extractVisitorFace(capture, faceBox);
+  const fW = layout.w * faceSpec.width;
+  const aspect = face.height / face.width;
+  const fH = fW * Math.min(1.15, aspect + 0.04);
+  const fX = layout.x + (layout.w - fW) / 2;
+  const fY = layout.y + layout.h * faceSpec.top;
+
+  target.save();
+  target.globalAlpha = 0.98;
+  target.drawImage(face, fX, fY, fW, fH);
+  target.restore();
 }
 
 function drawBackgroundCover(ctx: CanvasRenderingContext2D, bg: HTMLImageElement) {
@@ -190,14 +425,50 @@ function drawBackgroundCover(ctx: CanvasRenderingContext2D, bg: HTMLImageElement
   ctx.drawImage(bg, (OUT_W - bw) / 2, (OUT_H - bh) / 2, bw, bh);
 }
 
-function composeTryOn(
+function portraitBox(): Rect {
+  const portraitW = OUT_W * 0.94;
+  const portraitH = OUT_H * 0.92;
+  return {
+    x: (OUT_W - portraitW) / 2,
+    y: OUT_H * 0.04,
+    w: portraitW,
+    h: portraitH,
+  };
+}
+
+function drawHeritageGarment(
+  ctx: CanvasRenderingContext2D,
+  garment: HTMLCanvasElement,
+  layout: Rect,
+  garmentKey: GarmentKey,
+): void {
+  const neckAnchor = GARMENT_NECK_ANCHOR[garmentKey];
+  const modelNeckY = layout.y + layout.h * 0.14;
+  const scale = Math.min(layout.w / garment.width, layout.h / garment.height) * 1.04;
+  const rw = garment.width * scale;
+  const rh = garment.height * scale;
+  const gx = layout.x + (layout.w - rw) / 2;
+  const gy = modelNeckY - rh * neckAnchor;
+
+  const clipY = layout.y + layout.h * 0.08;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(layout.x, clipY, layout.w, layout.y + layout.h - clipY);
+  ctx.clip();
+  ctx.drawImage(garment, gx, gy, rw, rh);
+  ctx.restore();
+}
+
+async function composeTryOn(
   bg: HTMLImageElement,
   capture: HTMLImageElement | null,
   faceBox: FaceRegion | null | undefined,
   model: HTMLImageElement,
+  garmentKey: GarmentKey,
   fabricHex: string,
   modelGender: ModelGender,
-): string {
+  tryonImageUrl?: string | null,
+): Promise<string> {
   const canvas = document.createElement('canvas');
   canvas.width = OUT_W;
   canvas.height = OUT_H;
@@ -205,38 +476,42 @@ function composeTryOn(
 
   drawBackgroundCover(ctx, bg);
 
-  const bust = cropModelBust(model);
-  removeEdgeBackground(bust);
-  tintModelShirt(bust, fabricHex);
-  if (capture) eraseModelFace(bust, modelGender);
+  const isHeritage = HERITAGE_GARMENTS.includes(garmentKey);
+  const torsoMask: TorsoMask = isHeritage ? TORSO_MASK[garmentKey] : TEMPLATE_TORSO_MASK[garmentKey];
+  const faceSpec = isHeritage ? FACE_ON_PORTRAIT[modelGender] : FACE_ON_MODEL[modelGender];
 
-  const bustH = OUT_H * 0.96;
-  const bustW = bustH * (bust.width / bust.height);
-  const bustX = (OUT_W - bustW) / 2;
-  const bustY = OUT_H - bustH;
+  const portrait = isHeritage ? cropPortraitTop(model) : modelToCanvas(model);
+  removeEdgeBackground(portrait, isHeritage ? 46 : 36);
 
-  ctx.drawImage(bust, bustX, bustY, bustW, bustH);
+  recolorTorso(portrait, torsoMask, fabricHex);
 
-  if (capture) {
-    const face = extractVisitorFace(capture, faceBox);
-    const spec = FACE_ON_BUST[modelGender];
-    const fW = bustW * spec.width;
-    const fH = fW * (face.height / face.width);
-    const fX = bustX + (bustW - fW) / 2;
-    const fY = bustY + bustH * spec.top;
-    ctx.drawImage(face, fX, fY, fW, fH);
+  if (capture) eraseModelFace(portrait, faceSpec);
+
+  const box = portraitBox();
+  const layout = isHeritage
+    ? drawCoverBottom(ctx, portrait, box)
+    : drawContainInBox(ctx, portrait, box);
+
+  if (isHeritage) {
+    const garment = await loadTintedGarment(garmentKey, fabricHex, tryonImageUrl);
+    drawHeritageGarment(ctx, garment, layout, garmentKey);
   }
 
-  return canvas.toDataURL('image/jpeg', 0.93);
+  if (capture) {
+    paintVisitorFace(ctx, layout, capture, faceBox, faceSpec);
+  }
+
+  return canvas.toDataURL('image/jpeg', 0.92);
 }
 
 function useTryOnImage(
   captureDataUrl: string | null,
   faceBox: FaceRegion | null | undefined,
-  _garmentKey: GarmentKey,
+  garmentKey: GarmentKey,
   fabricHex: string,
   backgroundId: string,
   gender: string | null | undefined,
+  tryonImageUrl?: string | null,
 ) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -247,9 +522,12 @@ function useTryOnImage(
 
     const modelGender = modelGenderFromProfile(gender);
     const bgSrc = BACKGROUND_SRC[backgroundId] || BACKGROUND_SRC.studio;
-    const modelSrc = MODEL_SRC[modelGender];
+    const modelSrc = tryOnModelSrc(modelGender, garmentKey);
 
-    Promise.all([loadImage(bgSrc), loadImage(modelSrc)])
+    Promise.all([
+      loadImage(bgSrc),
+      loadImage(modelSrc).catch(() => loadImage(MODEL_SRC[modelGender])),
+    ])
       .then(async ([bg, model]) => {
         if (cancelled) return;
         let capture: HTMLImageElement | null = null;
@@ -260,7 +538,16 @@ function useTryOnImage(
             capture = null;
           }
         }
-        const url = composeTryOn(bg, capture, faceBox, model, fabricHex, modelGender);
+        const url = await composeTryOn(
+          bg,
+          capture,
+          faceBox,
+          model,
+          garmentKey,
+          fabricHex,
+          modelGender,
+          tryonImageUrl,
+        );
         if (!cancelled) {
           setImageUrl(url);
           setLoading(false);
@@ -273,7 +560,7 @@ function useTryOnImage(
     return () => {
       cancelled = true;
     };
-  }, [captureDataUrl, faceBox, fabricHex, backgroundId, gender]);
+  }, [captureDataUrl, faceBox, garmentKey, fabricHex, backgroundId, gender, tryonImageUrl]);
 
   return { imageUrl, loading };
 }
@@ -286,6 +573,7 @@ export function LookComposer({
   backgroundId,
   designName,
   gender,
+  tryonImageUrl,
   className = '',
   fullBleed = false,
   fitContain = false,
@@ -298,6 +586,7 @@ export function LookComposer({
     fabricHex,
     backgroundId,
     gender,
+    tryonImageUrl,
   );
 
   const frameClass = fullBleed
@@ -324,7 +613,7 @@ export function LookComposer({
           className={
             fitContain
               ? 'h-full w-full object-contain object-center'
-              : 'h-full w-full object-cover object-center'
+              : 'h-full w-full object-cover object-[center_20%]'
           }
           initial={{ opacity: 0, scale: 1.03 }}
           animate={{ opacity: 1, scale: 1 }}

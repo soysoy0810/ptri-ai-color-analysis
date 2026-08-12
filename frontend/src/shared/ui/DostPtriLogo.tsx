@@ -9,7 +9,7 @@ export function DostPtriLogo({ className = '' }: DostPtriLogoProps) {
   return (
     <img
       src={LOGO_SRC}
-      alt="DOST–PTRI"
+      alt="Philippine Textile Research Institute"
       className={`object-contain ${className}`}
       draggable={false}
     />

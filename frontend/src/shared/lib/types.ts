@@ -58,6 +58,12 @@ export interface DesignItem {
   category_id: string;
   /** Who the garment is designed for: 'male' | 'female' | 'unisex' */
   audience?: string;
+  /** Try-on compositor preset (polo, barong, etc.) */
+  garment_type?: string;
+  /** Admin-uploaded catalog photo */
+  preview_url?: string | null;
+  /** Admin-uploaded try-on overlay/base PNG */
+  tryon_url?: string | null;
 }
 
 export interface BackgroundItem {

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Cpu, Layers, UserRound } from 'lucide-react';
+import { Cpu, Layers, Sparkles, UserRound } from 'lucide-react';
 import { FEATURE_BULLETS } from '../../data/catalog';
 import { useLiveClock } from '../../shared/hooks/useLiveClock';
 import { DostPtriLogo } from '../../shared/ui/DostPtriLogo';
@@ -9,7 +9,6 @@ interface WelcomeScreenProps {
   onStart: () => void;
 }
 
-/** The approved artwork with the AI woman + textile pattern, text removed */
 const ART = `${import.meta.env.BASE_URL}brand/home-art-clean.png`;
 
 const ICONS = {
@@ -18,7 +17,6 @@ const ICONS = {
   personal: UserRound,
 } as const;
 
-/** Pulsing mesh nodes over the woman's head so the AI figure feels alive */
 function FaceMeshPulse({ className = '' }: { className?: string }) {
   const nodes: Array<[number, number]> = [
     [30, 10], [52, 6], [72, 13], [86, 27], [66, 23], [44, 19],
@@ -30,7 +28,7 @@ function FaceMeshPulse({ className = '' }: { className?: string }) {
       {nodes.map(([x, y], i) => (
         <motion.span
           key={i}
-          className="absolute h-1.5 w-1.5 rounded-full bg-sky-200 shadow-[0_0_8px_rgba(125,211,252,0.9)]"
+          className="absolute h-1.5 w-1.5 rounded-full bg-sky-300 shadow-[0_0_10px_rgba(56,189,248,0.95)]"
           style={{ left: `${x}%`, top: `${y}%` }}
           animate={{ opacity: [0.15, 1, 0.15], scale: [0.8, 1.6, 0.8] }}
           transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut', delay: i * 0.15 }}
@@ -40,17 +38,11 @@ function FaceMeshPulse({ className = '' }: { className?: string }) {
   );
 }
 
-/**
- * Home: the approved artwork is the entire background (AI woman + blue
- * textile pattern, untouched). Real interactive UI is layered exactly
- * where the design places it.
- */
 export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
   const { time, day } = useLiveClock();
 
   return (
-    <section className="relative flex h-full min-h-full flex-col overflow-hidden bg-white px-6 pb-6 pt-5">
-      {/* Exact artwork background with a slow breathing motion */}
+    <section className="relative flex h-full min-h-full flex-col overflow-hidden px-5 pb-6 pt-4">
       <motion.img
         src={ART}
         alt=""
@@ -60,113 +52,146 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
         transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
       />
 
-      {/* Living overlays on the woman: mesh pulse + scan shimmer */}
       <FaceMeshPulse className="absolute right-0 top-[4%] z-[1] h-[46%] w-[42%]" />
       <motion.div
-        className="pointer-events-none absolute right-0 top-[6%] z-[1] h-[52%] w-[40%] rounded-full bg-gradient-to-b from-transparent via-sky-300/20 to-transparent"
-        animate={{ y: ['-6%', '12%', '-6%'], opacity: [0.1, 0.4, 0.1] }}
+        className="pointer-events-none absolute right-0 top-[6%] z-[1] h-[52%] w-[40%] rounded-full bg-gradient-to-b from-transparent via-sky-400/25 to-transparent"
+        animate={{ y: ['-6%', '12%', '-6%'], opacity: [0.12, 0.45, 0.12] }}
         transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
       />
+      <motion.div
+        className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-r from-transparent via-sky-200/10 to-transparent"
+        animate={{ x: ['-120%', '120%'] }}
+        transition={{ duration: 4.5, repeat: Infinity, repeatDelay: 5, ease: 'easeInOut' }}
+        aria-hidden
+      />
 
-      {/* Header */}
-      <header className="relative z-[3] mb-6 flex items-start justify-between gap-3">
-        <motion.div
-          className="flex min-w-0 items-center gap-2.5"
+      {/* Government + AI content panel */}
+      <div className="relative z-[3] flex min-h-0 flex-1 flex-col">
+        {/* Official header strip */}
+        <motion.header
+          className="mb-3 shrink-0 border-b-2 border-[#C9A227]/80 pb-3"
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <DostPtriLogo className="h-[54px] w-[54px] shrink-0" />
-          <div className="min-w-0">
-            <p className="text-[8.5px] font-bold leading-[1.25] text-navy">
-              Department of Science and Technology
-            </p>
-            <p className="text-[8.5px] font-bold uppercase leading-[1.25] text-navy">
-              Philippine Textile Research Institute
-            </p>
-            <p className="mt-0.5 text-[15px] font-extrabold leading-none text-navy">DOST-PTRI</p>
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <DostPtriLogo className="h-[52px] w-[52px] shrink-0 drop-shadow-sm" />
+              <div className="min-w-0">
+                <p className="text-[7.5px] font-bold uppercase tracking-[0.12em] text-navy/80">
+                  Republic of the Philippines
+                </p>
+                <p className="text-[8.5px] font-bold leading-snug text-navy">
+                  Department of Science and Technology
+                </p>
+              </div>
+            </div>
+            <div className="shrink-0 rounded-lg border border-white/40 bg-white/30 px-2 py-1 text-right backdrop-blur-[1px]">
+              <div className="text-[13px] font-extrabold tabular-nums leading-none text-navy">{time}</div>
+              <div className="mt-0.5 text-[9px] font-semibold text-navy/75">{day}</div>
+            </div>
           </div>
-        </motion.div>
-        <motion.div
-          className="shrink-0 pt-0.5 text-right"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-        >
-          <div className="text-[15px] font-extrabold leading-none text-navy">{time}</div>
-          <div className="mt-1 text-[11px] font-semibold text-navy">{day}</div>
-        </motion.div>
-      </header>
+        </motion.header>
 
-      {/* Hero text */}
-      <div className="relative z-[3] mt-2 max-w-[62%]">
-        <motion.h1
-          className="font-extrabold uppercase tracking-tight"
-          initial={{ opacity: 0, x: -16 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <span className="block text-[3.4rem] leading-[0.95] text-navy">PTRI</span>
-          <span className="mt-1 block text-[1.5rem] leading-[1.1]">
-            <motion.span
-              className="inline-block text-accent"
-              animate={{ opacity: [0.7, 1, 0.7] }}
-              transition={{ duration: 2.2, repeat: Infinity }}
-            >
-              AI
-            </motion.span>{' '}
-            <span className="text-navy">COLOR ANALYSIS</span>
-          </span>
-        </motion.h1>
-        <motion.p
-          className="mt-4 text-[1.02rem] font-semibold leading-snug text-navy"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.25 }}
-        >
-          Smart Colors. Perfect Style.
-          <br />
-          Made for You.
-        </motion.p>
-      </div>
+        <div className="relative max-w-[58%] flex-1 p-3.5 pl-0">
+          <motion.div
+            className="relative"
+            initial={{ opacity: 0, x: -14 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="mb-1 flex items-center gap-1.5">
+              <span className="inline-flex items-center gap-1 rounded-full border border-accent/40 bg-transparent px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-wider text-accent">
+                <Sparkles className="h-2.5 w-2.5" />
+                AI Powered
+              </span>
+            </div>
 
-      {/* Feature list */}
-      <ul className="relative z-[3] mt-8 space-y-3.5">
-        {FEATURE_BULLETS.map((item, index) => {
-          const Icon = ICONS[item.id];
-          return (
-            <motion.li
-              key={item.id}
-              className="flex items-center gap-3"
-              initial={{ opacity: 0, x: -12 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.25 + index * 0.1 }}
-            >
+            <h1 className="font-['Libre_Baskerville'] text-[1.05rem] font-bold uppercase leading-[1.12] tracking-wide text-navy">
+              Philippine Textile
+              <br />
+              Research Institute
+            </h1>
+            <div className="mt-2 flex items-center gap-2">
+              <div className="h-[3px] w-10 rounded-full bg-[#C9A227]" />
+              <div className="h-px flex-1 max-w-[140px] bg-gradient-to-r from-[#C9A227]/60 to-transparent" />
+            </div>
+          </motion.div>
+
+          <motion.h2
+            className="relative mt-4 font-extrabold uppercase tracking-tight"
+            initial={{ opacity: 0, x: -14 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.08 }}
+          >
+            <span className="block text-[1.4rem] leading-none">
               <motion.span
-                className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-navy text-white"
-                animate={{ scale: [1, 1.07, 1] }}
-                transition={{ duration: 2.4, repeat: Infinity, delay: index * 0.35 }}
+                className="bg-gradient-to-r from-accent via-sky-400 to-accent bg-clip-text text-transparent"
+                animate={{ opacity: [0.85, 1, 0.85] }}
+                transition={{ duration: 2.2, repeat: Infinity }}
               >
-                <Icon className="h-4 w-4" strokeWidth={2.2} />
-              </motion.span>
-              <strong className="text-[0.98rem] font-extrabold text-navy">{item.title}</strong>
-            </motion.li>
-          );
-        })}
-      </ul>
+                AI
+              </motion.span>{' '}
+              <span className="text-navy">Color Analysis</span>
+            </span>
+          </motion.h2>
 
-      {/* CTA raised to chest height of the AI figure, same left position */}
-      <div className="relative z-[3] mt-auto pb-[36%]">
-        <motion.button
-          type="button"
-          onClick={onStart}
-          className="relative flex min-h-[58px] w-[min(100%,320px)] items-center rounded-2xl bg-gradient-to-r from-navy to-[#16407c] px-6 text-[1.05rem] font-extrabold tracking-wide text-white shadow-[0_14px_30px_rgba(11,31,58,0.4)]"
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.45 }}
-          whileTap={{ scale: 0.97 }}
-        >
-          <span>TOUCH TO START</span>
-          <TouchPulseCue className="absolute -right-2 top-1/2 -translate-y-1/2" />
-        </motion.button>
+          <motion.p
+            className="relative mt-2.5 text-[0.92rem] font-semibold leading-snug text-navy"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            Smart Colors. Perfect Style.
+            <br />
+            Made for You.
+          </motion.p>
+
+          <ul className="relative mt-5 max-w-full space-y-3">
+            {FEATURE_BULLETS.map((item, index) => {
+              const Icon = ICONS[item.id];
+              return (
+                <motion.li
+                  key={item.id}
+                  className="flex items-center gap-2.5 bg-transparent py-0.5"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.22 + index * 0.08 }}
+                >
+                  <motion.span
+                    className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-navy to-[#1E4D8C] text-white shadow-md"
+                    animate={{ scale: [1, 1.06, 1] }}
+                    transition={{ duration: 2.4, repeat: Infinity, delay: index * 0.35 }}
+                  >
+                    <Icon className="h-3.5 w-3.5" strokeWidth={2.2} />
+                  </motion.span>
+                  <strong className="text-[10.5px] font-extrabold uppercase leading-tight tracking-wide text-navy">
+                    {item.title}
+                  </strong>
+                </motion.li>
+              );
+            })}
+          </ul>
+        </div>
+
+        <div className="relative mt-3 max-w-[58%] shrink-0 pb-[34%]">
+          <motion.button
+            type="button"
+            onClick={onStart}
+            className="relative flex min-h-[56px] w-full items-center overflow-hidden rounded-2xl bg-gradient-to-r from-navy via-[#16407c] to-navy px-5 text-[1rem] font-extrabold tracking-wide text-white shadow-[0_14px_32px_rgba(11,31,58,0.38)]"
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.45 }}
+            whileTap={{ scale: 0.97 }}
+          >
+            <motion.span
+              className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent"
+              animate={{ x: ['-100%', '100%'] }}
+              transition={{ duration: 2.8, repeat: Infinity, repeatDelay: 3 }}
+            />
+            <span className="relative">TOUCH TO START</span>
+            <TouchPulseCue className="absolute -right-2 top-1/2 -translate-y-1/2" />
+          </motion.button>
+        </div>
       </div>
     </section>
   );

@@ -1,7 +1,8 @@
 import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
-import { BACKGROUNDS, CATEGORIES, DESIGNS, FABRICS } from '../../data/catalog';
-import { BACKGROUND_SRC, garmentForDesign } from '../../data/garments';
+import { BACKGROUNDS, CATEGORIES, FABRICS } from '../../data/catalog';
+import { BACKGROUND_SRC } from '../../data/garments';
+import { getDesignById, resolveGarmentKey, resolveTryonUrl } from '../../shared/lib/catalogStore';
 import type { FaceRegion, PaletteColor } from '../../shared/lib/types';
 import { DostPtriLogo } from '../../shared/ui/DostPtriLogo';
 import { LookComposer } from '../../shared/ui/LookComposer';
@@ -36,8 +37,9 @@ export function PreviewScreen({
   const fabric = FABRICS.find((f) => f.id === fabricId);
   const garmentColor = fabric?.hex || selectedColors[0]?.hex || '#1E4D8C';
   const category = CATEGORIES.find((c) => c.id === categoryId);
-  const design = (categoryId && DESIGNS[categoryId]?.find((d) => d.id === designId)) || undefined;
-  const garmentKey = garmentForDesign(designId);
+  const design = getDesignById(designId);
+  const garmentKey = resolveGarmentKey(designId);
+  const tryonImageUrl = resolveTryonUrl(designId);
 
   return (
     <section className="-mx-5 -mt-4 flex h-full min-h-0 flex-col overflow-hidden">
@@ -91,6 +93,7 @@ export function PreviewScreen({
           fabricHex={garmentColor}
           backgroundId={backgroundId}
           designName={design?.name}
+          tryonImageUrl={tryonImageUrl}
         />
       </motion.div>
 

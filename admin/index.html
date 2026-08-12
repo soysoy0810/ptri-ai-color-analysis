@@ -37,21 +37,86 @@
       .error { color: var(--red); font-size: 13px; font-weight: 600; margin-top: 10px; }
       .logo-dot { width: 46px; height: 46px; border-radius: 14px; margin-bottom: 16px;
         background: linear-gradient(130deg, var(--blue), var(--navy)); display: grid; place-items: center;
-        color: #fff; font-weight: 800; font-size: 15px; }
+        color: #fff; }
 
       /* ---------- app shell ---------- */
       header.app { background: linear-gradient(120deg, var(--navy), #1e4d8c); color: #fff;
         padding: 16px 26px; display: flex; align-items: center; justify-content: space-between; }
+      header.app .brand { display: flex; align-items: center; gap: 12px; }
+      header.app .brand-mark { width: 36px; height: 36px; border-radius: 10px;
+        background: rgba(255,255,255,.14); display: grid; place-items: center; }
       header.app strong { font-size: 16px; }
-      header.app .who { font-size: 13px; opacity: 0.85; margin-right: 14px; }
-      main { display: grid; grid-template-columns: 230px 1fr; min-height: calc(100vh - 68px); }
-      nav { background: #fff; border-right: 1px solid var(--line); padding: 16px 12px; }
-      nav button { width: 100%; text-align: left; border: 0; background: transparent; padding: 12px 12px;
-        border-radius: 10px; font-weight: 700; color: var(--navy); font-size: 14px; margin-bottom: 2px; }
-      nav button.active, nav button:hover { background: var(--blue-soft); color: var(--blue); }
+      header.app .who { font-size: 13px; opacity: 0.85; margin-right: 14px; display: inline-flex; align-items: center; gap: 6px; }
+      header.app .btn-ghost { color: #fff; border-color: rgba(255,255,255,.28); background: rgba(255,255,255,.08); }
+      header.app .btn-ghost:hover { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.45); }
+
+      .ico { flex-shrink: 0; display: block; vertical-align: middle; }
+      .ico-wrap { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center;
+        background: #eef2f6; color: var(--muted); flex-shrink: 0; }
+      .nav-item.active .ico-wrap, .nav-item:hover .ico-wrap { background: rgba(47,128,237,.14); color: var(--blue); }
+      .nav-item.sub .ico-wrap { width: 24px; height: 24px; border-radius: 7px; }
+      .nav-group-head .ico-wrap { width: 22px; height: 22px; border-radius: 6px; background: transparent; }
+      .nav-group-head .grp-label { display: flex; align-items: center; gap: 8px; }
+      .nav-group-head .chev { display: grid; place-items: center; opacity: .55; transition: transform 0.2s; }
+      .nav-group.open .chev { transform: rotate(90deg); }
+
+      main { display: grid; grid-template-columns: 268px 1fr; min-height: calc(100vh - 68px); }
+      nav { background: #fff; border-right: 1px solid var(--line); padding: 14px 10px; overflow-y: auto; }
+      nav .nav-item { width: 100%; text-align: left; border: 0; background: transparent; padding: 9px 10px;
+        border-radius: 10px; font-weight: 700; color: var(--navy); font-size: 13.5px; margin-bottom: 2px;
+        display: flex; align-items: center; gap: 10px; }
+      nav .nav-item.active, nav .nav-item:hover { background: var(--blue-soft); color: var(--blue); }
+      nav .nav-group { margin-bottom: 8px; }
+      nav .nav-group-head { width: 100%; text-align: left; border: 0; background: transparent;
+        padding: 10px 10px 6px; font-weight: 800; font-size: 11px; text-transform: uppercase;
+        letter-spacing: 0.06em; color: var(--muted); display: flex; align-items: center;
+        justify-content: space-between; cursor: pointer; border-radius: 8px; }
+      nav .nav-group-head:hover { background: #f8fafc; color: var(--navy); }
+      nav .nav-group-items { display: none; padding-left: 4px; }
+      nav .nav-group.open .nav-group-items { display: block; }
+      nav .nav-item.sub { padding-left: 12px; font-size: 13px; font-weight: 600; }
+
+      .page-head { margin-bottom: 18px; display: flex; gap: 14px; align-items: flex-start; }
+      .page-head .page-ico { width: 46px; height: 46px; border-radius: 14px; background: var(--blue-soft);
+        color: var(--blue); display: grid; place-items: center; flex-shrink: 0; }
+      .page-head .page-copy { min-width: 0; }
+      .page-head .crumb { font-size: 12px; color: var(--muted); font-weight: 600; margin-bottom: 4px; }
+      .page-head h1 { margin: 0; font-size: 22px; }
+      .page-head p { margin: 6px 0 0; color: var(--muted); font-size: 14px; max-width: 720px; }
+
+      .dash-section h3 { display: flex; align-items: center; gap: 8px; }
+      .stat { display: flex; flex-direction: column; gap: 6px; }
+      .stat .stat-ico { width: 34px; height: 34px; border-radius: 10px; background: var(--blue-soft);
+        color: var(--blue); display: grid; place-items: center; }
+      .stat .stat-ico.green { background: #e6f4ee; color: var(--green); }
+      .stat .stat-ico.amber { background: #fff4e5; color: #b76e00; }
+      .quick-links button { display: inline-flex; align-items: center; gap: 7px; }
+      .bulk-bar button, .bulk-bar span.lbl { display: inline-flex; align-items: center; gap: 6px; }
+      .bulk-bar span.lbl { font-size: 12px; font-weight: 700; color: var(--muted); margin-right: 4px; }
+      .folder-cell { display: flex; align-items: center; gap: 10px; }
+      .folder-cell .mini-ico { width: 30px; height: 30px; border-radius: 8px; background: #eef2f6;
+        color: var(--blue); display: grid; place-items: center; flex-shrink: 0; }
+      .thumb { width: 48px; height: 48px; border-radius: 10px; object-fit: contain; background: #f4f7fb;
+        border: 1px solid var(--line); }
+      .photo-preview { width: 88px; height: 88px; border-radius: 12px; object-fit: contain; background: #f4f7fb;
+        border: 1px solid var(--line); margin-top: 8px; }
+      .file-hint { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
+
+      .dash-section { margin-bottom: 22px; }
+      .dash-section h3 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase;
+        letter-spacing: 0.05em; color: var(--muted); }
+      .quick-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+      .quick-links button { border: 1.5px solid var(--line); background: #fff; border-radius: 10px;
+        padding: 10px 14px; font-size: 12.5px; font-weight: 700; color: var(--navy); }
+      .quick-links button:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-soft); }
+
+      .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
+      .toolbar select { padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 10px;
+        font-size: 13px; font-weight: 600; min-width: 180px; background: #fff; }
+
       section.content { padding: 22px 26px; }
       .card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
-      .card h2 { margin: 0 0 4px; font-size: 18px; }
+      .card h2 { margin: 0 0 4px; font-size: 18px; display: flex; align-items: center; gap: 8px; }
       .card .sub { margin: 0 0 16px; color: var(--muted); font-size: 13px; }
 
       .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
@@ -70,6 +135,34 @@
       .detail-row { font-size: 12px; color: var(--muted); margin-top: 2px; }
       .email-tag { display: inline-block; background: var(--blue-soft); color: var(--blue); border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 700; margin: 2px 2px 0 0; }
 
+      .act-row { display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; }
+      .act-btn { padding: 5px 9px; font-size: 11px; font-weight: 800; border-radius: 8px;
+        border: 1.5px solid var(--line); background: #fff; color: var(--navy); white-space: nowrap;
+        display: inline-flex; align-items: center; gap: 5px; }
+      .act-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-soft); }
+      .act-btn.edit { color: var(--blue); }
+      .act-btn.del { color: var(--red); border-color: #f5c6c2; background: #fff5f4; }
+      .act-btn.del:hover { background: #fdecea; }
+      .bulk-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px;
+        padding: 10px 12px; background: #f8fafc; border: 1px solid var(--line); border-radius: 12px; }
+      .bulk-bar span { font-size: 12px; font-weight: 700; color: var(--muted); margin-right: 4px; }
+      .bulk-bar button { padding: 7px 12px; font-size: 11.5px; font-weight: 800; border-radius: 8px;
+        border: 1.5px solid var(--line); background: #fff; color: var(--navy);
+        display: inline-flex; align-items: center; gap: 6px; }
+      .bulk-bar button:hover { border-color: var(--blue); color: var(--blue); }
+      .detail-grid { display: grid; grid-template-columns: 120px 1fr; gap: 8px 14px; font-size: 13px; }
+      .detail-grid dt { color: var(--muted); font-weight: 700; margin: 0; }
+      .detail-grid dd { margin: 0; word-break: break-word; }
+      .swatch-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+      .swatch { width: 22px; height: 22px; border-radius: 6px; border: 1px solid rgba(11,31,58,.12);
+        box-shadow: inset 0 0 0 1px rgba(255,255,255,.35); flex-shrink: 0; }
+      .swatch-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px 4px 4px;
+        border: 1px solid var(--line); border-radius: 999px; font-size: 11px; font-weight: 700;
+        background: #fff; margin: 0 6px 6px 0; }
+      .swatch-chip .swatch { width: 18px; height: 18px; border-radius: 999px; }
+      .palette-note { font-size: 12px; color: var(--muted); margin-top: 4px; }
+      th.act-col, td.act-col { text-align: right; min-width: 140px; }
+
       /* palette editor */
       .pal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
       .pal-item { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: #fff; }
@@ -79,14 +172,20 @@
       .pal-item .meta span { font-size: 11.5px; color: var(--muted); }
       .pal-item .actions { display: flex; gap: 6px; padding: 0 12px 12px; }
       .pal-item .actions button { flex: 1; padding: 7px 0; font-size: 11.5px; font-weight: 800;
-        border-radius: 8px; border: 1.5px solid var(--line); background: #fff; }
+        border-radius: 8px; border: 1.5px solid var(--line); background: #fff;
+        display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
       .pal-item .actions .edit { color: var(--blue); }
       .pal-item .actions .del { color: var(--red); }
 
-      .add-row { display: grid; grid-template-columns: 1fr 130px 110px auto; gap: 10px; align-items: end; }
+      .add-row { display: grid; grid-template-columns: 1fr minmax(220px, 280px) 100px auto; gap: 10px; align-items: end; }
       .add-row .field { margin: 0; }
-      .add-row input[type="color"] { width: 100%; height: 46px; padding: 4px; border: 1.5px solid var(--line);
-        border-radius: 12px; background: #fff; }
+      .field-hint { font-size: 11px; color: var(--muted); margin: 0 0 6px; font-weight: 600; line-height: 1.35; }
+      .color-input-row { display: flex; gap: 8px; align-items: center; }
+      .color-input-row input[type="color"] { width: 52px; height: 46px; padding: 4px; border: 1.5px solid var(--line);
+        border-radius: 12px; background: #fff; flex-shrink: 0; cursor: pointer; }
+      .color-input-row input[type="text"] { flex: 1; min-width: 0; padding: 11px 12px; border: 1.5px solid var(--line);
+        border-radius: 12px; font-size: 14px; font-weight: 700; font-family: ui-monospace, monospace; }
+      .color-input-row input[type="text"]:focus { border-color: var(--blue); outline: none; }
 
       dialog { border: 0; border-radius: 18px; padding: 24px; width: min(92vw, 380px);
         box-shadow: 0 30px 70px rgba(4, 12, 26, 0.4); }
@@ -97,7 +196,9 @@
       .toast.show { opacity: 1; }
       @media (max-width: 860px) {
         main { grid-template-columns: 1fr; }
-        nav { display: flex; overflow-x: auto; }
+        nav { display: block; max-height: none; }
+        nav .nav-group-items { display: block !important; }
+        nav .nav-group-head .chev { display: none; }
         .stat-grid { grid-template-columns: repeat(2, 1fr); }
         .add-row { grid-template-columns: 1fr 1fr; }
       }
@@ -122,6 +223,169 @@
         setTimeout(() => el.classList.remove('show'), 2400);
       }
 
+      function esc(s) {
+        return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+
+      function parseColorsJson(raw) {
+        if (!raw) return [];
+        if (Array.isArray(raw)) return raw;
+        try {
+          const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          return [];
+        }
+      }
+
+      function renderColorSwatches(colors, max = 6) {
+        if (!colors.length) return '<span class="muted">—</span>';
+        const shown = colors.slice(0, max);
+        const chips = shown.map((c) => {
+          const hex = c.hex || '#cbd5e1';
+          const name = c.name || hex;
+          return `<span class="swatch" title="${esc(name)}" style="background:${esc(hex)}"></span>`;
+        }).join('');
+        const extra = colors.length > max
+          ? `<span class="muted" style="font-size:11px;font-weight:700">+${colors.length - max}</span>`
+          : '';
+        return `<div class="swatch-row">${chips}${extra}</div>`;
+      }
+
+      function renderColorChips(colors) {
+        if (!colors.length) return '<span class="muted">No colors saved for this session.</span>';
+        return colors.map((c) => {
+          const hex = c.hex || '#cbd5e1';
+          const name = c.name || 'Color';
+          return `<span class="swatch-chip"><span class="swatch" style="background:${esc(hex)}"></span>${esc(name)} <span class="muted">${esc(hex)}</span></span>`;
+        }).join('');
+      }
+
+      function formatColorsCsv(colors) {
+        return colors.map((c) => `${c.name || 'Color'} (${c.hex || '?'})`).join('; ') || '';
+      }
+
+      function selectionModeLabel(mode) {
+        if (mode === 'top5') return 'Top 5 (AI picks)';
+        if (mode === 'top10') return 'Top 10 (AI picks)';
+        if (mode === 'custom') return 'Custom selection';
+        return mode || '—';
+      }
+
+      function normalizeHex(value) {
+        let hex = String(value || '').trim();
+        if (!hex) return null;
+        if (!hex.startsWith('#')) hex = '#' + hex;
+        if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return null;
+        return hex.toUpperCase();
+      }
+
+      function bindHexPair(pickerId, textId) {
+        const picker = document.getElementById(pickerId);
+        const text = document.getElementById(textId);
+        if (!picker || !text) return;
+        picker.addEventListener('input', () => {
+          text.value = picker.value.toUpperCase();
+        });
+        text.addEventListener('input', () => {
+          const normalized = normalizeHex(text.value);
+          if (normalized) picker.value = normalized;
+        });
+        text.addEventListener('blur', () => {
+          const normalized = normalizeHex(text.value);
+          if (normalized) {
+            text.value = normalized;
+            picker.value = normalized;
+          }
+        });
+      }
+
+      function readHexPair(pickerId, textId) {
+        const text = document.getElementById(textId);
+        const picker = document.getElementById(pickerId);
+        const normalized = normalizeHex(text?.value || picker?.value);
+        if (!normalized) throw new Error('Enter a valid hex color like #CC8899');
+        return normalized;
+      }
+
+      const ICONS = {
+        dashboard: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="4" rx="1"/><rect x="14" y="10" width="7" height="11" rx="1"/><rect x="3" y="13" width="7" height="8" rx="1"/>',
+        users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+        user: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+        mail: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',
+        folder: '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>',
+        'folder-open': '<path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/>',
+        palette: '<circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>',
+        layers: '<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>',
+        shirt: '<path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/>',
+        activity: '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
+        check: '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
+        bell: '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
+        spark: '<path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>',
+        pencil: '<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/>',
+        trash: '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
+        eye: '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+        'eye-off': '<path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/>',
+        copy: '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+        plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+        download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
+        logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>',
+        chevron: '<path d="m9 18 6-6-6-6"/>',
+        arrow: '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+        grid: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>',
+        inbox: '<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
+      };
+
+      function icon(name, size = 18) {
+        const body = ICONS[name];
+        if (!body) return '';
+        return `<svg class="ico" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
+      }
+
+      function icoWrap(name, size = 16) {
+        return `<span class="ico-wrap">${icon(name, size)}</span>`;
+      }
+
+      function actBtn(label, cls, attrs = '', iconName = null) {
+        const ico = iconName ? icon(iconName, 13) : '';
+        return `<button type="button" class="act-btn ${cls}" ${attrs}>${ico}<span>${label}</span></button>`;
+      }
+
+      function bulkBar(buttonsHtml) {
+        return `<div class="bulk-bar"><span class="lbl">${icon('grid', 14)}<span>Bulk actions</span></span>${buttonsHtml}</div>`;
+      }
+
+      function bulkBtn(id, label, iconName) {
+        return `<button type="button" id="${id}">${icon(iconName, 14)}<span>${label}</span></button>`;
+      }
+
+      async function bulkToggle(endpoint, items, active, onDone) {
+        const label = active ? 'show' : 'hide';
+        if (!confirm(`${active ? 'Show' : 'Hide'} all ${items.length} items?`)) return;
+        try {
+          await Promise.all(items.map((item) =>
+            call(`${endpoint}/${item.id}`, { method: 'PUT', body: JSON.stringify({ is_active: active }) })));
+          toast(`All items ${label === 'show' ? 'shown' : 'hidden'}.`);
+          onDone();
+        } catch (err) { toast(err.message); }
+      }
+
+      function showDetailDialog(title, rows) {
+        const existing = document.getElementById('detail-dialog');
+        if (existing) existing.remove();
+        const dlg = document.createElement('dialog');
+        dlg.id = 'detail-dialog';
+        dlg.innerHTML = `
+          <h2 style="margin:0 0 14px">${esc(title)}</h2>
+          <dl class="detail-grid">${rows.map(([k, v]) =>
+            `<dt>${esc(k)}</dt><dd>${v}</dd>`).join('')}</dl>
+          <div style="margin-top:18px"><button type="button" class="btn btn-blue" id="detail-close" style="width:100%">Close</button></div>`;
+        document.body.appendChild(dlg);
+        dlg.showModal();
+        dlg.querySelector('#detail-close').addEventListener('click', () => dlg.close());
+        dlg.addEventListener('close', () => dlg.remove());
+      }
+
       async function call(path, options = {}) {
         const res = await fetch(API + path, {
           headers: {
@@ -139,12 +403,45 @@
         return payload.data;
       }
 
+      async function callForm(path, formData, method = 'POST') {
+        const res = await fetch(API + path, {
+          method,
+          headers: {
+            Accept: 'application/json',
+            ...(token ? { Authorization: 'Bearer ' + token } : {}),
+          },
+          body: formData,
+        });
+        const payload = await res.json().catch(() => ({}));
+        if (res.status === 401) { logout(); throw new Error('Session expired — please sign in.'); }
+        if (!res.ok || payload.ok === false) {
+          throw new Error(payload?.error?.message || 'Request failed (' + res.status + ')');
+        }
+        return payload.data;
+      }
+
+      const GARMENT_TYPES = [
+        ['polo', 'Polo / shirt'],
+        ['collar-blouse', 'Collar blouse'],
+        ['linen-shirt', 'Linen shirt'],
+        ['formal-shirt', 'Formal shirt'],
+        ['active-tee', 'Active tee'],
+        ['barong', 'Barong'],
+        ['terno', 'Terno'],
+        ['filipiniana-blouse', 'Filipiniana blouse'],
+      ];
+
+      function garmentTypeOptions(selected) {
+        return GARMENT_TYPES.map(([v, label]) =>
+          `<option value="${v}"${selected === v ? ' selected' : ''}>${label}</option>`).join('');
+      }
+
       /* ---------------- login ---------------- */
       function renderLogin(msg = '') {
         app.innerHTML = `
           <div class="login-wrap">
             <form class="login-card" id="login-form">
-              <div class="logo-dot">AI</div>
+              <div class="logo-dot">${icon('spark', 22)}</div>
               <h1>PTRI Kiosk Admin</h1>
               <p>Philippine Textile Research Institute — sign in to manage the kiosk.</p>
               <div class="field">
@@ -155,7 +452,7 @@
                 <label for="password">Password</label>
                 <input id="password" type="password" autocomplete="current-password" required />
               </div>
-              <button class="btn btn-primary" type="submit">SIGN IN</button>
+              <button class="btn btn-primary" type="submit">${icon('user', 16)} SIGN IN</button>
               <div class="error" id="login-error">${msg}</div>
             </form>
           </div>`;
@@ -190,38 +487,109 @@
       }
 
       /* ---------------- shell ---------------- */
-      const VIEWS = [
-        ['dashboard', 'Dashboard'],
-        ['palette', 'Color Palette'],
-        ['fabrics', 'PTRI Fabrics (Tela)'],
-        ['designs', 'Designs / Clothes'],
-        ['visitors', 'Visitors'],
-        ['emails', 'Email Log'],
+      const PAGE_META = {
+        dashboard: { title: 'Dashboard', crumb: 'Overview', desc: 'Kiosk activity and catalog at a glance.', icon: 'dashboard' },
+        visitors: { title: 'Kiosk Sessions', crumb: 'Visitors & Activity', desc: 'Visitor profiles, color palette choices, garment picks, and result codes from the kiosk.', icon: 'user' },
+        emails: { title: 'Email Log', crumb: 'Visitors & Activity', desc: 'Results emails sent by visitors.', icon: 'mail' },
+        palette: { title: 'Color Palette', crumb: 'Kiosk Catalog', desc: 'AI-ranked swatches shown during color analysis.', icon: 'palette' },
+        fabrics: { title: 'PTRI Textiles', crumb: 'Kiosk Catalog', desc: 'Fabric options (tela) visitors can choose for their look.', icon: 'layers' },
+        designs: { title: 'Garment Designs', crumb: 'Kiosk Catalog', desc: 'Clothing styles grouped by category (polo, barong, terno, etc.).', icon: 'shirt' },
+        categories: { title: 'Style Categories', crumb: 'Kiosk Catalog', desc: 'Folders that organize garment designs on the kiosk.', icon: 'folder-open' },
+      };
+
+      const NAV = [
+        { type: 'item', id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
+        {
+          type: 'group', id: 'grp-visitors', label: 'Visitors & Activity', icon: 'users',
+          items: [
+            { id: 'visitors', label: 'Kiosk Sessions', icon: 'user' },
+            { id: 'emails', label: 'Email Log', icon: 'mail' },
+          ],
+        },
+        {
+          type: 'group', id: 'grp-catalog', label: 'Kiosk Catalog', icon: 'folder',
+          items: [
+            { id: 'palette', label: 'Color Palette', icon: 'palette' },
+            { id: 'fabrics', label: 'PTRI Textiles (Tela)', icon: 'layers' },
+            { id: 'designs', label: 'Garment Designs', icon: 'shirt' },
+            { id: 'categories', label: 'Style Categories', icon: 'folder-open' },
+          ],
+        },
       ];
+
+      let openGroups = JSON.parse(localStorage.getItem('ptri_nav_open') || '{"grp-visitors":true,"grp-catalog":true}');
+
+      function renderNav() {
+        return NAV.map((entry) => {
+          if (entry.type === 'item') {
+            return `<button class="nav-item${currentView === entry.id ? ' active' : ''}" data-view="${entry.id}">
+              ${icoWrap(entry.icon)}<span>${entry.label}</span></button>`;
+          }
+          const isOpen = openGroups[entry.id] !== false;
+          return `<div class="nav-group${isOpen ? ' open' : ''}" data-group="${entry.id}">
+            <button type="button" class="nav-group-head" data-toggle="${entry.id}">
+              <span class="grp-label">${icoWrap(entry.icon, 14)}<span>${entry.label}</span></span>
+              <span class="chev">${icon('chevron', 14)}</span>
+            </button>
+            <div class="nav-group-items">
+              ${entry.items.map((item) =>
+                `<button class="nav-item sub${currentView === item.id ? ' active' : ''}" data-view="${item.id}">
+                  ${icoWrap(item.icon, 14)}<span>${item.label}</span></button>`
+              ).join('')}
+            </div>
+          </div>`;
+        }).join('');
+      }
+
+      function pageHeader(id) {
+        const m = PAGE_META[id] || { title: id, crumb: '', desc: '', icon: 'grid' };
+        return `<div class="page-head">
+          <div class="page-ico">${icon(m.icon, 22)}</div>
+          <div class="page-copy">
+            <div class="crumb">${m.crumb}${m.crumb ? ' / ' : ''}${m.title}</div>
+            <h1>${m.title}</h1>
+            <p>${m.desc}</p>
+          </div>
+        </div>`;
+      }
 
       function renderShell() {
         app.innerHTML = `
           <header class="app">
-            <strong>PTRI AI Kiosk — Admin Panel</strong>
+            <div class="brand"><div class="brand-mark">${icon('spark', 18)}</div>
+              <strong>PTRI AI Kiosk — Admin Panel</strong>
+            </div>
             <div>
-              <span class="who">Signed in as ${adminName}</span>
-              <button class="btn btn-ghost" id="logout" style="padding:8px 14px;font-size:12px">Log out</button>
+              <span class="who">${icon('user', 14)} Signed in as ${adminName}</span>
+              <button class="btn btn-ghost" id="logout" style="padding:8px 14px;font-size:12px">${icon('logout', 14)} Log out</button>
             </div>
           </header>
           <main>
-            <nav>${VIEWS.map(([id, label]) =>
-              `<button data-view="${id}">${label}</button>`).join('')}</nav>
+            <nav id="sidebar">${renderNav()}</nav>
             <section class="content" id="view"></section>
           </main>`;
         document.getElementById('logout').addEventListener('click', logout);
-        app.querySelectorAll('nav button').forEach((b) =>
+        bindNavEvents();
+      }
+
+      function bindNavEvents() {
+        app.querySelectorAll('[data-view]').forEach((b) =>
           b.addEventListener('click', () => show(b.dataset.view)));
+        app.querySelectorAll('[data-toggle]').forEach((b) =>
+          b.addEventListener('click', () => {
+            const gid = b.dataset.toggle;
+            openGroups[gid] = !openGroups[gid];
+            localStorage.setItem('ptri_nav_open', JSON.stringify(openGroups));
+            document.getElementById('sidebar').innerHTML = renderNav();
+            bindNavEvents();
+          }));
       }
 
       function setActive(name) {
         currentView = name;
-        app.querySelectorAll('nav button').forEach((b) =>
-          b.classList.toggle('active', b.dataset.view === name));
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar) sidebar.innerHTML = renderNav();
+        bindNavEvents();
       }
 
       async function show(name) {
@@ -233,10 +601,11 @@
           if (name === 'palette') return renderPalette(view);
           if (name === 'fabrics') return renderFabrics(view);
           if (name === 'designs') return renderDesigns(view);
+          if (name === 'categories') return renderCategories(view);
           if (name === 'visitors') return renderVisitors(view);
           if (name === 'emails') return renderEmails(view);
         } catch (err) {
-          view.innerHTML = `<div class="card"><h2>Something went wrong</h2><p class="muted">${err.message}</p></div>`;
+          view.innerHTML = `${pageHeader(name)}<div class="card"><h2>Something went wrong</h2><p class="muted">${err.message}</p></div>`;
         }
       }
 
@@ -244,41 +613,74 @@
       async function renderDashboard(view) {
         const s = await call('/admin/stats');
         view.innerHTML = `
-          <div class="stat-grid">
-            <div class="stat"><div class="n">${s.sessions_total}</div><div class="l">Total Sessions</div></div>
-            <div class="stat"><div class="n">${s.sessions_today}</div><div class="l">Sessions Today</div></div>
-            <div class="stat"><div class="n">${s.sessions_completed}</div><div class="l">Completed</div></div>
-            <div class="stat"><div class="n">${s.staff_alerts_open}</div><div class="l">Open Staff Alerts</div></div>
-            <div class="stat"><div class="n">${s.colors_active}</div><div class="l">Active Colors</div></div>
-            <div class="stat"><div class="n">${s.fabrics_active}</div><div class="l">PTRI Fabrics</div></div>
-            <div class="stat"><div class="n">${s.designs_active}</div><div class="l">Designs</div></div>
-            <div class="stat"><div class="n">${s.emails_queued}</div><div class="l">Emails Queued</div></div>
+          ${pageHeader('dashboard')}
+          <div class="dash-section">
+            <h3>${icon('activity', 16)} Kiosk activity</h3>
+            <div class="stat-grid">
+              <div class="stat"><div class="stat-ico">${icon('user', 18)}</div><div class="n">${s.sessions_total}</div><div class="l">Total Sessions</div></div>
+              <div class="stat"><div class="stat-ico">${icon('activity', 18)}</div><div class="n">${s.sessions_today}</div><div class="l">Today</div></div>
+              <div class="stat"><div class="stat-ico green">${icon('check', 18)}</div><div class="n">${s.sessions_completed}</div><div class="l">Completed</div></div>
+              <div class="stat"><div class="stat-ico">${icon('mail', 18)}</div><div class="n">${s.emails_queued}</div><div class="l">Emails Queued</div></div>
+            </div>
+            <div class="quick-links">
+              <button type="button" data-go="visitors">${icon('user', 14)} View kiosk sessions ${icon('arrow', 14)}</button>
+              <button type="button" data-go="emails">${icon('mail', 14)} View email log ${icon('arrow', 14)}</button>
+            </div>
           </div>
-          <div class="card" style="margin-top:16px">
-            <h2>Welcome, ${adminName}</h2>
-            <p class="sub">Manage <strong>Color Palette</strong>, <strong>PTRI Fabrics (Tela)</strong>, and <strong>Designs / Clothes</strong>.
-            Every visitor who uses the kiosk appears under <strong>Visitors</strong> with their name, age, gender, and choices.
-            Emails they send results to are in <strong>Email Log</strong>.</p>
+          <div class="dash-section">
+            <h3>${icon('folder', 16)} Kiosk catalog</h3>
+            <div class="stat-grid">
+              <div class="stat"><div class="stat-ico">${icon('palette', 18)}</div><div class="n">${s.colors_active}</div><div class="l">Palette Colors</div></div>
+              <div class="stat"><div class="stat-ico">${icon('layers', 18)}</div><div class="n">${s.fabrics_active}</div><div class="l">PTRI Textiles</div></div>
+              <div class="stat"><div class="stat-ico">${icon('shirt', 18)}</div><div class="n">${s.designs_active}</div><div class="l">Garment Designs</div></div>
+              <div class="stat"><div class="stat-ico amber">${icon('bell', 18)}</div><div class="n">${s.staff_alerts_open}</div><div class="l">Staff Alerts</div></div>
+            </div>
+            <div class="quick-links">
+              <button type="button" data-go="palette">${icon('palette', 14)} Manage color palette ${icon('arrow', 14)}</button>
+              <button type="button" data-go="fabrics">${icon('layers', 14)} Manage textiles ${icon('arrow', 14)}</button>
+              <button type="button" data-go="designs">${icon('shirt', 14)} Manage garment designs ${icon('arrow', 14)}</button>
+              <button type="button" data-go="categories">${icon('folder-open', 14)} View style categories ${icon('arrow', 14)}</button>
+            </div>
+          </div>
+          <div class="card">
+            <h2>${icon('spark', 18)} Welcome, ${adminName}</h2>
+            <p class="sub">Use the sidebar folders to manage content:
+            <strong>Visitors & Activity</strong> for kiosk sessions and emails;
+            <strong>Kiosk Catalog</strong> for the color palette, PTRI textiles (tela), and garment designs organized by style category.</p>
           </div>`;
+        view.querySelectorAll('[data-go]').forEach((b) =>
+          b.addEventListener('click', () => show(b.dataset.go)));
       }
 
       /* ---------------- palette ---------------- */
       async function renderPalette(view) {
         const colors = await call('/admin/colors');
         view.innerHTML = `
+          ${pageHeader('palette')}
           <div class="card">
-            <h2>Add a Palette Color</h2>
-            <p class="sub">New colors join the approved palette that the kiosk AI ranks for each visitor.</p>
+            <h2>${icon('plus', 18)} Add a Palette Color</h2>
+            <p class="sub">Enter a <strong>name</strong> and pick the actual <strong>swatch color</strong>. The name alone does not change the color — you must choose or type the hex code (e.g. puce = <code>#CC8899</code>).</p>
             <form class="add-row" id="add-form">
-              <div class="field"><label>Color name</label><input id="new-name" required placeholder="e.g. Manila Sunrise" /></div>
-              <div class="field"><label>Color</label><input id="new-hex" type="color" value="#1E4D8C" /></div>
+              <div class="field"><label>Color name</label><input id="new-name" required placeholder="e.g. Puce" /></div>
+              <div class="field">
+                <label>Swatch color</label>
+                <p class="field-hint">Use the picker or type hex</p>
+                <div class="color-input-row">
+                  <input id="new-hex" type="color" value="#CC8899" title="Pick color" />
+                  <input id="new-hex-text" type="text" value="#CC8899" placeholder="#CC8899" maxlength="7" aria-label="Hex color code" />
+                </div>
+              </div>
               <div class="field"><label>Sort order</label><input id="new-sort" type="number" min="0" value="${colors.length + 1}" /></div>
-              <button class="btn btn-blue" type="submit">ADD COLOR</button>
+              <button class="btn btn-blue" type="submit">${icon('plus', 14)} ADD COLOR</button>
             </form>
           </div>
           <div class="card">
-            <h2>Approved Palette (${colors.length})</h2>
+            <h2>${icon('palette', 18)} Approved Palette (${colors.length})</h2>
             <p class="sub">Tap Edit to rename or recolor. Inactive colors are hidden from the kiosk.</p>
+            ${bulkBar(`
+              ${bulkBtn('pal-show-all', 'Show all', 'eye')}
+              ${bulkBtn('pal-hide-all', 'Hide all', 'eye-off')}
+            `)}
             <div class="pal-grid">${colors.map((c) => `
               <div class="pal-item">
                 <div class="sw" style="background:${c.hex}"></div>
@@ -288,9 +690,9 @@
                   <span class="pill ${c.is_active ? 'on' : 'off'}" style="float:right">${c.is_active ? 'Active' : 'Hidden'}</span>
                 </div>
                 <div class="actions">
-                  <button class="edit" data-id="${c.id}">Edit</button>
-                  <button data-id="${c.id}" data-active="${c.is_active ? 0 : 1}" class="tog">${c.is_active ? 'Hide' : 'Show'}</button>
-                  <button class="del" data-id="${c.id}">Delete</button>
+                  <button class="edit" data-id="${c.id}">${icon('pencil', 12)} Edit</button>
+                  <button data-id="${c.id}" data-active="${c.is_active ? 0 : 1}" class="tog">${icon(c.is_active ? 'eye-off' : 'eye', 12)} ${c.is_active ? 'Hide' : 'Show'}</button>
+                  <button class="del" data-id="${c.id}">${icon('trash', 12)} Delete</button>
                 </div>
               </div>`).join('')}
             </div>
@@ -299,7 +701,14 @@
             <form id="edit-form">
               <h2 style="margin:0 0 14px">Edit Color</h2>
               <div class="field"><label>Name</label><input id="edit-name" required /></div>
-              <div class="field"><label>Color</label><input id="edit-hex" type="color" style="width:100%;height:46px;padding:4px;border:1.5px solid var(--line);border-radius:12px;background:#fff" /></div>
+              <div class="field">
+                <label>Swatch color</label>
+                <p class="field-hint">Picker and hex must match the real color</p>
+                <div class="color-input-row">
+                  <input id="edit-hex" type="color" title="Pick color" />
+                  <input id="edit-hex-text" type="text" placeholder="#CC8899" maxlength="7" aria-label="Hex color code" />
+                </div>
+              </div>
               <div class="field"><label>Sort order</label><input id="edit-sort" type="number" min="0" /></div>
               <div style="display:flex;gap:10px;margin-top:16px">
                 <button class="btn btn-ghost" type="button" id="edit-cancel" style="flex:1">Cancel</button>
@@ -308,14 +717,18 @@
             </form>
           </dialog>`;
 
+        bindHexPair('new-hex', 'new-hex-text');
+        bindHexPair('edit-hex', 'edit-hex-text');
+
         document.getElementById('add-form').addEventListener('submit', async (e) => {
           e.preventDefault();
           try {
+            const hex = readHexPair('new-hex', 'new-hex-text');
             await call('/admin/colors', {
               method: 'POST',
               body: JSON.stringify({
                 name: document.getElementById('new-name').value,
-                hex: document.getElementById('new-hex').value,
+                hex,
                 sort_order: Number(document.getElementById('new-sort').value),
               }),
             });
@@ -330,6 +743,7 @@
           editing = colors.find((c) => c.id === b.dataset.id);
           document.getElementById('edit-name').value = editing.name;
           document.getElementById('edit-hex').value = editing.hex;
+          document.getElementById('edit-hex-text').value = editing.hex;
           document.getElementById('edit-sort').value = editing.sort_order;
           dialog.showModal();
         }));
@@ -337,11 +751,12 @@
         document.getElementById('edit-form').addEventListener('submit', async (e) => {
           e.preventDefault();
           try {
+            const hex = readHexPair('edit-hex', 'edit-hex-text');
             await call('/admin/colors/' + editing.id, {
               method: 'PUT',
               body: JSON.stringify({
                 name: document.getElementById('edit-name').value,
-                hex: document.getElementById('edit-hex').value,
+                hex,
                 sort_order: Number(document.getElementById('edit-sort').value),
               }),
             });
@@ -369,36 +784,49 @@
             renderPalette(view);
           } catch (err) { toast(err.message); }
         }));
+
+        document.getElementById('pal-show-all')?.addEventListener('click', () =>
+          bulkToggle('/admin/colors', colors, true, () => renderPalette(view)));
+        document.getElementById('pal-hide-all')?.addEventListener('click', () =>
+          bulkToggle('/admin/colors', colors, false, () => renderPalette(view)));
       }
 
       /* ---------------- fabrics (tela) ---------------- */
       async function renderFabrics(view) {
         const fabrics = await call('/admin/fabrics');
         view.innerHTML = `
+          ${pageHeader('fabrics')}
           <div class="card">
-            <h2>Add PTRI Fabric (Tela)</h2>
+            <h2>${icon('plus', 18)} Add PTRI Textile (Tela)</h2>
             <p class="sub">Fabrics shown on the kiosk for visitors to choose. Changes appear on the kiosk immediately.</p>
             <form class="add-row" id="add-fabric-form" style="grid-template-columns:100px 1fr 130px 90px auto">
               <div class="field"><label>Code</label><input id="fab-code" required placeholder="001" /></div>
               <div class="field"><label>Name</label><input id="fab-name" required placeholder="Navy Abaca Blend" /></div>
               <div class="field"><label>Color</label><input id="fab-hex" type="color" value="#1E4D8C" /></div>
               <div class="field"><label>Match %</label><input id="fab-match" type="number" min="0" max="100" value="80" /></div>
-              <button class="btn btn-blue" type="submit">ADD</button>
+              <button class="btn btn-blue" type="submit">${icon('plus', 14)} ADD</button>
             </form>
           </div>
           <div class="card">
-            <h2>PTRI Fabrics (${fabrics.length})</h2>
+            <h2>${icon('layers', 18)} PTRI Fabrics (${fabrics.length})</h2>
+            ${bulkBar(`
+              ${bulkBtn('fab-show-all', 'Show all', 'eye')}
+              ${bulkBtn('fab-hide-all', 'Hide all', 'eye-off')}
+            `)}
             <table class="wrap">
-              <thead><tr><th></th><th>Code</th><th>Name</th><th>Hex</th><th>Match</th><th>Status</th><th></th></tr></thead>
+              <thead><tr><th></th><th>Code</th><th>Name</th><th>Hex</th><th>Match</th><th>Status</th><th class="act-col">Actions</th></tr></thead>
               <tbody>${fabrics.map((f) => `
                 <tr>
                   <td><div style="width:34px;height:34px;border-radius:10px;background:${f.hex};border:1px solid rgba(0,0,0,.08)"></div></td>
                   <td>${f.code}</td><td><strong>${f.name}</strong></td><td class="muted">${f.hex}</td>
                   <td>${f.base_match}%</td>
                   <td><span class="pill ${f.is_active ? 'on' : 'off'}">${f.is_active ? 'Active' : 'Hidden'}</span></td>
-                  <td style="white-space:nowrap">
-                    <button class="btn btn-ghost fab-edit" data-id="${f.id}" style="padding:6px 10px;font-size:11px">Edit</button>
-                    <button class="btn btn-ghost fab-tog" data-id="${f.id}" data-active="${f.is_active ? 0 : 1}" style="padding:6px 10px;font-size:11px">${f.is_active ? 'Hide' : 'Show'}</button>
+                  <td class="act-col">
+                    <div class="act-row">
+                      ${actBtn('Edit', 'edit fab-edit', `data-id="${f.id}"`, 'pencil')}
+                      ${actBtn(f.is_active ? 'Hide' : 'Show', 'fab-tog', `data-id="${f.id}" data-active="${f.is_active ? 0 : 1}"`, f.is_active ? 'eye-off' : 'eye')}
+                      ${actBtn('Delete', 'del fab-del', `data-id="${f.id}"`, 'trash')}
+                    </div>
                   </td>
                 </tr>`).join('')}
               </tbody>
@@ -467,43 +895,80 @@
           await call('/admin/fabrics/' + b.dataset.id, { method: 'PUT', body: JSON.stringify({ is_active: b.dataset.active === '1' }) });
           renderFabrics(view);
         }));
+        view.querySelectorAll('.fab-del').forEach((b) => b.addEventListener('click', async () => {
+          if (!confirm('Delete this textile from the catalog?')) return;
+          try {
+            await call('/admin/fabrics/' + b.dataset.id, { method: 'DELETE' });
+            toast('Textile deleted.');
+            renderFabrics(view);
+          } catch (err) { toast(err.message); }
+        }));
+        document.getElementById('fab-show-all')?.addEventListener('click', () =>
+          bulkToggle('/admin/fabrics', fabrics, true, () => renderFabrics(view)));
+        document.getElementById('fab-hide-all')?.addEventListener('click', () =>
+          bulkToggle('/admin/fabrics', fabrics, false, () => renderFabrics(view)));
       }
 
       /* ---------------- designs / clothes ---------------- */
+      let designCatFilter = localStorage.getItem('ptri_des_cat_filter') || 'all';
+
       async function renderDesigns(view) {
         const [designs, categories] = await Promise.all([
           call('/admin/designs'),
           call('/admin/categories'),
         ]);
         const catOpts = categories.map((c) => `<option value="${c.id}">${c.label}</option>`).join('');
+        const filterOpts = `<option value="all">All categories</option>` +
+          categories.map((c) => `<option value="${c.id}"${designCatFilter === c.id ? ' selected' : ''}>${c.label}</option>`).join('');
+        const filtered = designCatFilter === 'all'
+          ? designs
+          : designs.filter((d) => d.category_id === designCatFilter);
         view.innerHTML = `
+          ${pageHeader('designs')}
           <div class="card">
-            <h2>Add Design / Clothing Style</h2>
-            <p class="sub">Garment styles visitors pick on the kiosk (polo, barong, terno, etc.).</p>
-            <form class="add-row" id="add-design-form" style="grid-template-columns:1fr 1fr 80px auto">
-              <div class="field"><label>Category</label><select id="des-cat" required style="width:100%;padding:12px;border:1.5px solid var(--line);border-radius:12px">${catOpts}</select></div>
+            <h2>${icon('plus', 18)} Add Garment Design</h2>
+            <p class="sub">Upload a garment photo — no code changes needed. Visitors see your photo on the kiosk design picker.</p>
+            <form class="add-row" id="add-design-form" style="grid-template-columns:1fr 1fr 80px 1fr 1fr auto;align-items:end">
+              <div class="field"><label>Category folder</label><select id="des-cat" required style="width:100%;padding:12px;border:1.5px solid var(--line);border-radius:12px">${catOpts}</select></div>
               <div class="field"><label>Design name</label><input id="des-name" required placeholder="Classic Polo" /></div>
               <div class="field"><label>Style</label><input id="des-code" placeholder="A" maxlength="4" /></div>
-              <button class="btn btn-blue" type="submit">ADD</button>
+              <div class="field"><label>Garment type (try-on)</label><select id="des-garment" style="width:100%;padding:12px;border:1.5px solid var(--line);border-radius:12px">${garmentTypeOptions('polo')}</select></div>
+              <div class="field"><label>Catalog photo</label><input id="des-preview" type="file" accept="image/png,image/jpeg,image/webp" required />
+                <p class="file-hint">PNG or JPG — shown on the design picker.</p></div>
+              <button class="btn btn-blue" type="submit">${icon('plus', 14)} ADD</button>
             </form>
           </div>
           <div class="card">
-            <h2>Designs / Clothes (${designs.length})</h2>
+            <div class="toolbar">
+              <h2 style="margin:0;flex:1;display:flex;align-items:center;gap:8px">${icon('shirt', 18)} Garment Designs (${filtered.length}${designCatFilter !== 'all' ? ' in folder' : ''})</h2>
+              <label style="font-size:12px;font-weight:700;color:var(--muted)">Filter by category</label>
+              <select id="des-filter">${filterOpts}</select>
+            </div>
+            ${bulkBar(`
+              ${bulkBtn('des-show-all', 'Show all', 'eye')}
+              ${bulkBtn('des-hide-all', 'Hide all', 'eye-off')}
+            `)}
             <table class="wrap">
-              <thead><tr><th>Category</th><th>Design Name</th><th>Style</th><th>Status</th><th></th></tr></thead>
-              <tbody>${designs.map((d) => `
+              <thead><tr><th>Photo</th><th>Category</th><th>Design Name</th><th>Style</th><th>Try-on type</th><th>Status</th><th class="act-col">Actions</th></tr></thead>
+              <tbody>${filtered.map((d) => `
                 <tr>
+                  <td>${d.preview_url ? `<img class="thumb" src="${d.preview_url}" alt="" />` : '<span class="muted">—</span>'}</td>
                   <td class="muted">${d.category_label || d.category_id}</td>
                   <td><strong>${d.name}</strong></td>
                   <td>${d.style_code || '—'}</td>
+                  <td class="muted">${d.garment_type || 'polo'}</td>
                   <td><span class="pill ${d.is_active ? 'on' : 'off'}">${d.is_active ? 'Active' : 'Hidden'}</span></td>
-                  <td style="white-space:nowrap">
-                    <button class="btn btn-ghost des-edit" data-id="${d.id}" style="padding:6px 10px;font-size:11px">Edit</button>
-                    <button class="btn btn-ghost des-tog" data-id="${d.id}" data-active="${d.is_active ? 0 : 1}" style="padding:6px 10px;font-size:11px">${d.is_active ? 'Hide' : 'Show'}</button>
+                  <td class="act-col">
+                    <div class="act-row">
+                      ${actBtn('Edit', 'edit des-edit', `data-id="${d.id}"`, 'pencil')}
+                      ${actBtn(d.is_active ? 'Hide' : 'Show', 'des-tog', `data-id="${d.id}" data-active="${d.is_active ? 0 : 1}"`, d.is_active ? 'eye-off' : 'eye')}
+                      ${actBtn('Delete', 'del des-del', `data-id="${d.id}"`, 'trash')}
+                    </div>
                   </td>
                 </tr>`).join('')}
               </tbody>
             </table>
+            ${filtered.length === 0 ? '<p class="muted" style="margin-top:14px">No designs in this category yet.</p>' : ''}
           </div>
           <dialog id="des-dialog">
             <form id="des-edit-form">
@@ -511,6 +976,18 @@
               <div class="field"><label>Category</label><select id="des-edit-cat" required style="width:100%;padding:12px;border:1.5px solid var(--line);border-radius:12px">${catOpts}</select></div>
               <div class="field"><label>Name</label><input id="des-edit-name" required /></div>
               <div class="field"><label>Style code</label><input id="des-edit-code" maxlength="4" /></div>
+              <div class="field"><label>Garment type (try-on shape)</label><select id="des-edit-garment" style="width:100%;padding:12px;border:1.5px solid var(--line);border-radius:12px">${garmentTypeOptions('polo')}</select></div>
+              <div class="field"><label>Audience</label><select id="des-edit-audience" style="width:100%;padding:12px;border:1.5px solid var(--line);border-radius:12px">
+                <option value="unisex">Unisex</option><option value="male">Male</option><option value="female">Female</option>
+              </select></div>
+              <div class="field"><label>Catalog photo</label>
+                <img id="des-edit-preview-img" class="photo-preview" alt="" hidden />
+                <input id="des-edit-preview" type="file" accept="image/png,image/jpeg,image/webp" />
+                <p class="file-hint">Replace the photo visitors tap on the kiosk.</p></div>
+              <div class="field"><label>Try-on overlay (optional)</label>
+                <img id="des-edit-tryon-img" class="photo-preview" alt="" hidden />
+                <input id="des-edit-tryon" type="file" accept="image/png,image/jpeg,image/webp" />
+                <p class="file-hint">PNG with transparent background for barong/terno-style try-on. Leave empty to use the built-in shape.</p></div>
               <div style="display:flex;gap:10px;margin-top:16px">
                 <button class="btn btn-ghost" type="button" id="des-cancel" style="flex:1">Cancel</button>
                 <button class="btn btn-blue" type="submit" style="flex:1">Save</button>
@@ -520,16 +997,17 @@
 
         document.getElementById('add-design-form').addEventListener('submit', async (e) => {
           e.preventDefault();
+          const preview = document.getElementById('des-preview').files[0];
+          if (!preview) { toast('Please choose a catalog photo.'); return; }
           try {
-            await call('/admin/designs', {
-              method: 'POST',
-              body: JSON.stringify({
-                category_id: document.getElementById('des-cat').value,
-                name: document.getElementById('des-name').value,
-                style_code: document.getElementById('des-code').value || null,
-              }),
-            });
-            toast('Design added.');
+            const fd = new FormData();
+            fd.append('category_id', document.getElementById('des-cat').value);
+            fd.append('name', document.getElementById('des-name').value);
+            fd.append('style_code', document.getElementById('des-code').value || '');
+            fd.append('garment_type', document.getElementById('des-garment').value);
+            fd.append('preview_image', preview);
+            await callForm('/admin/designs', fd);
+            toast('Design added with photo.');
             renderDesigns(view);
           } catch (err) { toast(err.message); }
         });
@@ -541,6 +1019,16 @@
           document.getElementById('des-edit-cat').value = editing.category_id;
           document.getElementById('des-edit-name').value = editing.name;
           document.getElementById('des-edit-code').value = editing.style_code || '';
+          document.getElementById('des-edit-garment').value = editing.garment_type || 'polo';
+          document.getElementById('des-edit-audience').value = editing.audience || 'unisex';
+          const prevImg = document.getElementById('des-edit-preview-img');
+          const tryImg = document.getElementById('des-edit-tryon-img');
+          if (editing.preview_url) { prevImg.src = editing.preview_url; prevImg.hidden = false; }
+          else { prevImg.hidden = true; prevImg.removeAttribute('src'); }
+          if (editing.tryon_url) { tryImg.src = editing.tryon_url; tryImg.hidden = false; }
+          else { tryImg.hidden = true; tryImg.removeAttribute('src'); }
+          document.getElementById('des-edit-preview').value = '';
+          document.getElementById('des-edit-tryon').value = '';
           dialog.showModal();
         }));
         document.getElementById('des-cancel').addEventListener('click', () => dialog.close());
@@ -553,8 +1041,18 @@
                 category_id: document.getElementById('des-edit-cat').value,
                 name: document.getElementById('des-edit-name').value,
                 style_code: document.getElementById('des-edit-code').value || null,
+                garment_type: document.getElementById('des-edit-garment').value,
+                audience: document.getElementById('des-edit-audience').value,
               }),
             });
+            const preview = document.getElementById('des-edit-preview').files[0];
+            const tryon = document.getElementById('des-edit-tryon').files[0];
+            if (preview || tryon) {
+              const fd = new FormData();
+              if (preview) fd.append('preview_image', preview);
+              if (tryon) fd.append('tryon_image', tryon);
+              await callForm('/admin/designs/' + editing.id + '/photos', fd);
+            }
             dialog.close();
             toast('Design updated.');
             renderDesigns(view);
@@ -564,68 +1062,261 @@
           await call('/admin/designs/' + b.dataset.id, { method: 'PUT', body: JSON.stringify({ is_active: b.dataset.active === '1' }) });
           renderDesigns(view);
         }));
+        view.querySelectorAll('.des-del').forEach((b) => b.addEventListener('click', async () => {
+          if (!confirm('Delete this garment design?')) return;
+          try {
+            await call('/admin/designs/' + b.dataset.id, { method: 'DELETE' });
+            toast('Design deleted.');
+            renderDesigns(view);
+          } catch (err) { toast(err.message); }
+        }));
+        document.getElementById('des-show-all')?.addEventListener('click', () =>
+          bulkToggle('/admin/designs', filtered, true, () => renderDesigns(view)));
+        document.getElementById('des-hide-all')?.addEventListener('click', () =>
+          bulkToggle('/admin/designs', filtered, false, () => renderDesigns(view)));
+        const filterEl = document.getElementById('des-filter');
+        if (filterEl) filterEl.addEventListener('change', () => {
+          designCatFilter = filterEl.value;
+          localStorage.setItem('ptri_des_cat_filter', designCatFilter);
+          renderDesigns(view);
+        });
+        if (designCatFilter !== 'all') {
+          const catSel = document.getElementById('des-cat');
+          if (catSel) catSel.value = designCatFilter;
+        }
+      }
+
+      /* ---------------- style categories (folders) ---------------- */
+      async function renderCategories(view) {
+        const [categories, designs] = await Promise.all([
+          call('/admin/categories'),
+          call('/admin/designs'),
+        ]);
+        const countByCat = designs.reduce((acc, d) => {
+          acc[d.category_id] = (acc[d.category_id] || 0) + 1;
+          return acc;
+        }, {});
+        view.innerHTML = `
+          ${pageHeader('categories')}
+          <div class="card">
+            <h2>${icon('folder-open', 18)} Style Categories (${categories.length})</h2>
+            <p class="sub">These are the folders on the kiosk that group garment designs (e.g. Corporate, Heritage, Casual).
+            Categories are managed in the database — use <strong>Garment Designs</strong> to assign designs to each folder.</p>
+            <table class="wrap">
+              <thead><tr><th>Folder</th><th>ID</th><th>Designs</th><th class="act-col">Actions</th></tr></thead>
+              <tbody>${categories.map((c) => {
+                const n = countByCat[c.id] || 0;
+                return `<tr>
+                  <td><div class="folder-cell"><span class="mini-ico">${icon('folder', 16)}</span><strong>${esc(c.label)}</strong></div></td>
+                  <td class="muted">${esc(c.id)}</td>
+                  <td>${n} design${n === 1 ? '' : 's'}</td>
+                  <td class="act-col">
+                    <div class="act-row">
+                      ${actBtn('View designs', 'cat-go', `data-id="${c.id}"`, 'eye')}
+                      ${actBtn('Add design', 'cat-add', `data-id="${c.id}"`, 'plus')}
+                    </div>
+                  </td>
+                </tr>`;
+              }).join('')}
+              </tbody>
+            </table>
+          </div>`;
+        view.querySelectorAll('.cat-go').forEach((b) => b.addEventListener('click', () => {
+          designCatFilter = b.dataset.id;
+          localStorage.setItem('ptri_des_cat_filter', designCatFilter);
+          show('designs');
+        }));
+        view.querySelectorAll('.cat-add').forEach((b) => b.addEventListener('click', () => {
+          designCatFilter = b.dataset.id;
+          localStorage.setItem('ptri_des_cat_filter', designCatFilter);
+          show('designs');
+          setTimeout(() => document.getElementById('des-name')?.focus(), 300);
+        }));
       }
 
       /* ---------------- visitors ---------------- */
       async function renderVisitors(view) {
         const sessions = await call('/admin/sessions');
         view.innerHTML = `
+          ${pageHeader('visitors')}
           <div class="card">
-            <h2>Visitors (${sessions.length})</h2>
-            <p class="sub">Everyone who tried the AI kiosk — profile info, their choices, and email if they sent results.</p>
+            <h2>${icon('user', 18)} Kiosk Sessions (${sessions.length})</h2>
+            <p class="sub">Everyone who tried the AI kiosk — profile info, <strong>colors they chose</strong>, garment/fabric picks, and email if they sent results.
+            <span class="palette-note">Result code = the short ID in the visitor’s QR code (e.g. R…) used to look up their saved try-on.</span></p>
+            ${bulkBar(`${bulkBtn('vis-export', 'Export CSV', 'download')}`)}
             <table class="wrap">
               <thead><tr>
                 <th>Visitor</th><th>Age</th><th>Gender</th><th>Email</th>
-                <th>Category</th><th>Design</th><th>Fabric (Tela)</th><th>Status</th><th>Date</th>
+                <th>Chosen palette</th><th>Category</th><th>Design</th><th>Fabric (Tela)</th><th>Status</th><th>Date</th>
+                <th class="act-col">Actions</th>
               </tr></thead>
               <tbody>${sessions.map((s) => {
                 const emails = (s.emails_sent || []).map((e) =>
                   `<span class="email-tag">${e.email} (${e.status})</span>`).join('');
                 const profileEmail = s.email ? `<span class="email-tag">${s.email}</span>` : '';
                 const emailCell = emails || profileEmail || '<span class="muted">—</span>';
+                const chosen = parseColorsJson(s.selected_colors_json);
+                const mode = s.selection_mode ? `<div class="detail-row muted">${esc(selectionModeLabel(s.selection_mode))}</div>` : '';
                 return `
                 <tr>
-                  <td><strong>${s.full_name || 'Guest'}</strong>
-                    ${s.result_token ? `<div class="detail-row">Token: ${s.result_token}</div>` : ''}</td>
-                  <td class="muted">${s.age_range || '—'}</td>
-                  <td class="muted">${s.gender || '—'}</td>
+                  <td><strong>${esc(s.full_name || 'Guest')}</strong>
+                    ${s.result_token ? `<div class="detail-row">Code: ${esc(s.result_token)}</div>` : ''}</td>
+                  <td class="muted">${esc(s.age_range || '—')}</td>
+                  <td class="muted">${esc(s.gender || '—')}</td>
                   <td>${emailCell}</td>
-                  <td>${s.category_label || s.category_id || '—'}</td>
-                  <td>${s.design_name || s.design_id || '—'}</td>
-                  <td>${s.fabric_name ? s.fabric_name + (s.fabric_code ? ' (' + s.fabric_code + ')' : '') : (s.fabric_id || '—')}</td>
-                  <td><span class="pill ${s.completed_at ? 'on' : 'off'}">${s.completed_at ? 'Completed' : s.status}</span></td>
+                  <td>${renderColorSwatches(chosen)}${mode}</td>
+                  <td>${esc(s.category_label || s.category_id || '—')}</td>
+                  <td>${esc(s.design_name || s.design_id || '—')}</td>
+                  <td>${s.fabric_name ? esc(s.fabric_name + (s.fabric_code ? ' (' + s.fabric_code + ')' : '')) : esc(s.fabric_id || '—')}</td>
+                  <td><span class="pill ${s.completed_at ? 'on' : 'off'}">${s.completed_at ? 'Completed' : esc(s.status)}</span></td>
                   <td class="muted" style="white-space:nowrap">${new Date(s.created_at).toLocaleString()}</td>
+                  <td class="act-col">
+                    <div class="act-row">
+                      ${actBtn('View', 'vis-view', `data-id="${s.id}"`, 'eye')}
+                      ${s.result_token ? actBtn('Copy code', 'vis-copy', `data-token="${esc(s.result_token)}"`, 'copy') : ''}
+                      ${actBtn('Delete', 'vis-del del', `data-id="${s.id}"`, 'trash')}
+                    </div>
+                  </td>
                 </tr>`;
               }).join('')}
               </tbody>
             </table>
             ${sessions.length === 0 ? '<p class="muted" style="margin-top:14px">No visitors yet — records appear after someone uses the kiosk.</p>' : ''}
           </div>`;
+
+        view.querySelectorAll('.vis-view').forEach((b) => b.addEventListener('click', () => {
+          const s = sessions.find((x) => x.id === b.dataset.id);
+          if (!s) return;
+          const emails = (s.emails_sent || []).map((e) => `${e.email} (${e.status})`).join(', ') || '—';
+          const chosen = parseColorsJson(s.selected_colors_json);
+          const top20 = parseColorsJson(s.top20_json);
+          showDetailDialog(s.full_name || 'Guest session', [
+            ['Session ID', esc(s.id)],
+            ['Name', esc(s.full_name || 'Guest')],
+            ['Age range', esc(s.age_range || '—')],
+            ['Gender', esc(s.gender || '—')],
+            ['Email', esc(s.email || '—')],
+            ['Status', esc(s.completed_at ? 'Completed' : s.status)],
+            ['How they picked colors', esc(selectionModeLabel(s.selection_mode))],
+            ['Colors they chose', renderColorChips(chosen)],
+            ['AI top 20 (ranked)', top20.length ? renderColorChips(top20.slice(0, 20)) : '<span class="muted">Not saved yet — completes after kiosk session finishes.</span>'],
+            ['Category', esc(s.category_label || s.category_id || '—')],
+            ['Design', esc(s.design_name || s.design_id || '—')],
+            ['Fabric', s.fabric_name ? esc(s.fabric_name + (s.fabric_code ? ' (' + s.fabric_code + ')' : '')) : esc(s.fabric_id || '—')],
+            ['Background', esc(s.background_id || '—')],
+            ['Result code (QR)', esc(s.result_token || '—')],
+            ['Emails sent', esc(emails)],
+            ['Started', new Date(s.created_at).toLocaleString()],
+            ['Completed', s.completed_at ? new Date(s.completed_at).toLocaleString() : '—'],
+          ]);
+        }));
+        view.querySelectorAll('.vis-copy').forEach((b) => b.addEventListener('click', async () => {
+          try {
+            await navigator.clipboard.writeText(b.dataset.token);
+            toast('Result code copied.');
+          } catch { toast('Could not copy — select and copy manually.'); }
+        }));
+        view.querySelectorAll('.vis-del').forEach((b) => b.addEventListener('click', async () => {
+          const s = sessions.find((x) => x.id === b.dataset.id);
+          const label = s?.full_name || 'this visitor';
+          if (!confirm(`Delete session for ${label}? This cannot be undone.`)) return;
+          try {
+            await call('/admin/sessions/' + b.dataset.id, { method: 'DELETE' });
+            toast('Session deleted.');
+            renderVisitors(view);
+          } catch (err) { toast(err.message); }
+        }));
+        document.getElementById('vis-export')?.addEventListener('click', () => {
+          const headers = ['Name', 'Age', 'Gender', 'Email', 'Selection mode', 'Chosen colors', 'AI top 20', 'Category', 'Design', 'Fabric', 'Result code', 'Status', 'Date'];
+          const rows = sessions.map((s) => {
+            const chosen = parseColorsJson(s.selected_colors_json);
+            const top20 = parseColorsJson(s.top20_json);
+            return [
+              s.full_name || 'Guest', s.age_range || '', s.gender || '', s.email || '',
+              selectionModeLabel(s.selection_mode),
+              formatColorsCsv(chosen),
+              formatColorsCsv(top20.slice(0, 20)),
+              s.category_label || s.category_id || '', s.design_name || s.design_id || '',
+              s.fabric_name || s.fabric_id || '', s.result_token || '',
+              s.completed_at ? 'Completed' : s.status,
+              new Date(s.created_at).toISOString(),
+            ];
+          });
+          const csv = [headers, ...rows].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+          a.download = 'kiosk-sessions.csv';
+          a.click();
+          toast('CSV exported.');
+        });
       }
 
       /* ---------------- email log ---------------- */
       async function renderEmails(view) {
         const rows = await call('/admin/emails');
         view.innerHTML = `
+          ${pageHeader('emails')}
           <div class="card">
-            <h2>Email Log (${rows.length})</h2>
+            <h2>${icon('mail', 18)} Email Log (${rows.length})</h2>
             <p class="sub">Every time a visitor sends their AI color results to an email address.</p>
+            ${bulkBar(`${bulkBtn('em-export', 'Export CSV', 'download')}`)}
             <table class="wrap">
-              <thead><tr><th>Email</th><th>Visitor</th><th>Age</th><th>Gender</th><th>Status</th><th>Sent</th><th>Queued</th></tr></thead>
+              <thead><tr><th>Email</th><th>Visitor</th><th>Age</th><th>Gender</th><th>Status</th><th>Sent</th><th>Queued</th><th class="act-col">Actions</th></tr></thead>
               <tbody>${rows.map((e) => `
                 <tr>
-                  <td><strong>${e.email}</strong></td>
-                  <td>${e.full_name || 'Guest'}</td>
-                  <td class="muted">${e.age_range || '—'}</td>
-                  <td class="muted">${e.gender || '—'}</td>
-                  <td><span class="pill ${e.status === 'sent' ? 'on' : 'off'}">${e.status}</span></td>
+                  <td><strong>${esc(e.email)}</strong></td>
+                  <td>${esc(e.full_name || 'Guest')}</td>
+                  <td class="muted">${esc(e.age_range || '—')}</td>
+                  <td class="muted">${esc(e.gender || '—')}</td>
+                  <td><span class="pill ${e.status === 'sent' ? 'on' : 'off'}">${esc(e.status)}</span></td>
                   <td class="muted">${e.sent_at ? new Date(e.sent_at).toLocaleString() : '—'}</td>
                   <td class="muted">${new Date(e.created_at).toLocaleString()}</td>
+                  <td class="act-col">
+                    <div class="act-row">
+                      ${actBtn('View', 'em-view', `data-id="${e.id}"`, 'eye')}
+                      ${actBtn('Copy email', 'em-copy', `data-email="${esc(e.email)}"`, 'copy')}
+                    </div>
+                  </td>
                 </tr>`).join('')}
               </tbody>
             </table>
             ${rows.length === 0 ? '<p class="muted" style="margin-top:14px">No emails queued yet.</p>' : ''}
           </div>`;
+
+        view.querySelectorAll('.em-view').forEach((b) => b.addEventListener('click', () => {
+          const e = rows.find((x) => String(x.id) === b.dataset.id);
+          if (!e) return;
+          showDetailDialog(e.email, [
+            ['Email', esc(e.email)],
+            ['Visitor', esc(e.full_name || 'Guest')],
+            ['Age range', esc(e.age_range || '—')],
+            ['Gender', esc(e.gender || '—')],
+            ['Status', esc(e.status)],
+            ['Session ID', esc(e.session_id || '—')],
+            ['Sent at', e.sent_at ? new Date(e.sent_at).toLocaleString() : '—'],
+            ['Queued at', new Date(e.created_at).toLocaleString()],
+          ]);
+        }));
+        view.querySelectorAll('.em-copy').forEach((b) => b.addEventListener('click', async () => {
+          try {
+            await navigator.clipboard.writeText(b.dataset.email);
+            toast('Email copied.');
+          } catch { toast('Could not copy.'); }
+        }));
+        document.getElementById('em-export')?.addEventListener('click', () => {
+          const headers = ['Email', 'Visitor', 'Age', 'Gender', 'Status', 'Sent', 'Queued'];
+          const csvRows = rows.map((e) => [
+            e.email, e.full_name || 'Guest', e.age_range || '', e.gender || '', e.status,
+            e.sent_at ? new Date(e.sent_at).toISOString() : '',
+            new Date(e.created_at).toISOString(),
+          ]);
+          const csv = [headers, ...csvRows].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+          a.download = 'email-log.csv';
+          a.click();
+          toast('CSV exported.');
+        });
       }
 
       /* ---------------- boot ---------------- */

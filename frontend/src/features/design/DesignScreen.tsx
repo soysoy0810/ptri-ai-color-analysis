@@ -1,7 +1,6 @@
 import { motion } from 'framer-motion';
 import { Check, Sparkles } from 'lucide-react';
-import { DESIGNS } from '../../data/catalog';
-import { DESIGN_GARMENT, GARMENT_SRC, garmentForDesign } from '../../data/garments';
+import { getDesignsForCategory, resolvePreviewUrl } from '../../shared/lib/catalogStore';
 
 interface DesignScreenProps {
   categoryId: string | null;
@@ -12,7 +11,7 @@ interface DesignScreenProps {
 }
 
 export function DesignScreen({ categoryId, selectedId, gender, onSelect }: DesignScreenProps) {
-  const all = (categoryId && DESIGNS[categoryId]) || [];
+  const all = categoryId ? getDesignsForCategory(categoryId) : [];
   const knownGender = gender === 'male' || gender === 'female';
   // AI ordering: designs made for the visitor first, then unisex, then the rest
   const designs = knownGender
@@ -30,8 +29,7 @@ export function DesignScreen({ categoryId, selectedId, gender, onSelect }: Desig
 
       <div className="grid grid-cols-2 gap-3">
         {designs.map((design, i) => {
-          const key = DESIGN_GARMENT[design.id] || garmentForDesign(design.id);
-          const src = GARMENT_SRC[key];
+          const src = resolvePreviewUrl(design.id) || '';
           const active = selectedId === design.id;
           const aiPick = knownGender && design.audience === gender;
           return (
@@ -68,13 +66,17 @@ export function DesignScreen({ categoryId, selectedId, gender, onSelect }: Desig
                 </motion.span>
               ) : null}
               <div className="mb-2 flex h-[120px] items-end justify-center overflow-hidden rounded-xl bg-gradient-to-b from-accent-soft to-white">
-                <motion.img
-                  src={src}
-                  alt={design.name}
-                  className="h-[112px] w-auto object-contain drop-shadow-md"
-                  draggable={false}
-                  whileHover={{ scale: 1.06 }}
-                />
+                {src ? (
+                  <motion.img
+                    src={src}
+                    alt={design.name}
+                    className="h-[112px] w-auto object-contain drop-shadow-md"
+                    draggable={false}
+                    whileHover={{ scale: 1.06 }}
+                  />
+                ) : (
+                  <span className="text-xs font-bold text-muted">No photo yet</span>
+                )}
               </div>
               <strong className="block text-sm font-bold text-navy">{design.name}</strong>
               <span className="text-xs text-muted">Style {design.style}</span>

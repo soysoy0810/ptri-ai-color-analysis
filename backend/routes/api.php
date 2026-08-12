@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\AnalyzeController;
 use App\Http\Controllers\Api\CatalogController;
+use App\Http\Controllers\Api\MediaController;
 use App\Http\Controllers\Api\ResultController;
 use App\Http\Controllers\Api\SessionController;
 use App\Http\Controllers\Api\StaffAlertController;
@@ -21,6 +22,7 @@ Route::get('/health', function () {
 });
 
 Route::get('/catalog', [CatalogController::class, 'index']);
+Route::get('/media/{path}', [MediaController::class, 'show'])->where('path', '.*');
 Route::post('/sessions', [SessionController::class, 'store']);
 Route::post('/sessions/{id}/complete', [SessionController::class, 'complete']);
 Route::post('/sessions/{id}/email', [SessionController::class, 'email']);
@@ -32,6 +34,7 @@ Route::get('/results/{token}', [ResultController::class, 'show']);
 Route::post('/admin/login', [AdminController::class, 'login']);
 Route::get('/admin/stats', [AdminController::class, 'stats']);
 Route::get('/admin/sessions', [AdminController::class, 'sessions']);
+Route::delete('/admin/sessions/{id}', [AdminController::class, 'deleteSession']);
 Route::get('/admin/emails', [AdminController::class, 'emails']);
 Route::get('/admin/colors', [AdminController::class, 'colors']);
 Route::post('/admin/colors', [AdminController::class, 'storeColor']);
@@ -46,3 +49,4 @@ Route::get('/admin/categories', [AdminController::class, 'categories']);
 Route::post('/admin/designs', [AdminController::class, 'storeDesign']);
 Route::put('/admin/designs/{id}', [AdminController::class, 'updateDesign']);
 Route::delete('/admin/designs/{id}', [AdminController::class, 'deleteDesign']);
+Route::post('/admin/designs/{id}/photos', [AdminController::class, 'uploadDesignPhotos']);

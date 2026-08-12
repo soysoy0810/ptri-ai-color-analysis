@@ -147,10 +147,9 @@ export function ThanksScreen({ name, onReset }: ThanksScreenProps) {
             <p className="text-[8px] font-bold leading-[1.25] text-navy">
               Department of Science and Technology
             </p>
-            <p className="text-[8px] font-bold uppercase leading-[1.25] text-navy">
+            <p className="text-[9.5px] font-extrabold uppercase leading-[1.3] tracking-wide text-navy">
               Philippine Textile Research Institute
             </p>
-            <p className="mt-0.5 text-[14px] font-extrabold leading-none text-navy">DOST-PTRI</p>
           </div>
         </motion.div>
         <motion.div className="shrink-0 pt-0.5 text-right" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>

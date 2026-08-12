@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Support\DesignMedia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -103,6 +104,32 @@ class AdminController extends Controller
         });
 
         return response()->json(['ok' => true, 'data' => $data]);
+    }
+
+    public function deleteSession(Request $request, string $id)
+    {
+        if ($err = $this->requireAuth($request)) {
+            return $err;
+        }
+
+        $session = DB::table('kiosk_sessions')->where('id', $id)->first();
+        if (!$session) {
+            return response()->json([
+                'ok' => false,
+                'error' => ['code' => 'NOT_FOUND', 'message' => 'Session not found.'],
+            ], 404);
+        }
+
+        DB::table('email_queue')->where('session_id', $id)->delete();
+        DB::table('staff_alerts')->where('session_id', $id)->delete();
+        DB::table('kiosk_sessions')->where('id', $id)->delete();
+
+        $this->audit($request, 'session_deleted', [
+            'id' => $id,
+            'full_name' => $session->full_name,
+        ]);
+
+        return response()->json(['ok' => true, 'data' => ['id' => $id]]);
     }
 
     public function emails(Request $request)
@@ -218,7 +245,8 @@ class AdminController extends Controller
             ->leftJoin('categories as c', 'c.id', '=', 'd.category_id')
             ->orderBy('c.sort_order')
             ->orderBy('d.name')
-            ->get(['d.*', 'c.label as category_label']);
+            ->get(['d.*', 'c.label as category_label'])
+            ->map(fn ($row) => $this->enrichDesign($row));
 
         return response()->json(['ok' => true, 'data' => $designs]);
     }
@@ -245,14 +273,32 @@ class AdminController extends Controller
             'category_id' => 'required|string|max:40|exists:categories,id',
             'name' => 'required|string|max:180',
             'style_code' => 'nullable|string|max:20',
+            'garment_type' => 'nullable|string|max:40|in:polo,collar-blouse,linen-shirt,formal-shirt,active-tee,barong,terno,filipiniana-blouse',
+            'audience' => 'nullable|string|max:20|in:male,female,unisex',
+            'preview_image' => 'nullable|image|max:8192',
+            'tryon_image' => 'nullable|image|max:8192',
         ]);
 
-        $id = 'd' . (DB::table('designs')->count() + 1) . '-' . substr(md5(uniqid()), 0, 4);
+        $id = 'd'.(DB::table('designs')->count() + 1).'-'.substr(md5(uniqid()), 0, 4);
+        $previewPath = null;
+        $tryonPath = null;
+
+        if ($request->hasFile('preview_image')) {
+            $previewPath = DesignMedia::storePreview($id, $request->file('preview_image'));
+        }
+        if ($request->hasFile('tryon_image')) {
+            $tryonPath = DesignMedia::storeTryon($id, $request->file('tryon_image'));
+        }
+
         DB::table('designs')->insert([
             'id' => $id,
             'category_id' => $data['category_id'],
             'name' => $data['name'],
             'style_code' => $data['style_code'] ?? null,
+            'garment_type' => $data['garment_type'] ?? 'polo',
+            'audience' => $data['audience'] ?? 'unisex',
+            'preview_image' => $previewPath,
+            'tryon_image' => $tryonPath,
             'is_active' => true,
             'created_at' => now(),
             'updated_at' => now(),
@@ -260,7 +306,7 @@ class AdminController extends Controller
 
         $this->audit($request, 'design_created', ['id' => $id, 'name' => $data['name']]);
 
-        return response()->json(['ok' => true, 'data' => DB::table('designs')->find($id)]);
+        return response()->json(['ok' => true, 'data' => $this->enrichDesign(DB::table('designs')->find($id))]);
     }
 
     public function updateDesign(Request $request, string $id)
@@ -273,12 +319,23 @@ class AdminController extends Controller
             'category_id' => 'sometimes|string|max:40|exists:categories,id',
             'name' => 'sometimes|string|max:180',
             'style_code' => 'nullable|string|max:20',
+            'garment_type' => 'nullable|string|max:40|in:polo,collar-blouse,linen-shirt,formal-shirt,active-tee,barong,terno,filipiniana-blouse',
+            'audience' => 'nullable|string|max:20|in:male,female,unisex',
             'is_active' => 'sometimes|boolean',
+            'preview_image' => 'nullable|image|max:8192',
+            'tryon_image' => 'nullable|image|max:8192',
         ]);
+
+        if ($request->hasFile('preview_image')) {
+            $data['preview_image'] = DesignMedia::storePreview($id, $request->file('preview_image'));
+        }
+        if ($request->hasFile('tryon_image')) {
+            $data['tryon_image'] = DesignMedia::storeTryon($id, $request->file('tryon_image'));
+        }
 
         $data['updated_at'] = now();
 
-        if (!DB::table('designs')->where('id', $id)->update($data)) {
+        if (! DB::table('designs')->where('id', $id)->update($data)) {
             return response()->json([
                 'ok' => false,
                 'error' => ['code' => 'NOT_FOUND', 'message' => 'Design not found.'],
@@ -287,7 +344,7 @@ class AdminController extends Controller
 
         $this->audit($request, 'design_updated', ['id' => $id] + $data);
 
-        return response()->json(['ok' => true, 'data' => DB::table('designs')->find($id)]);
+        return response()->json(['ok' => true, 'data' => $this->enrichDesign(DB::table('designs')->find($id))]);
     }
 
     public function deleteDesign(Request $request, string $id)
@@ -296,10 +353,58 @@ class AdminController extends Controller
             return $err;
         }
 
+        DesignMedia::deleteForDesign($id);
         DB::table('designs')->where('id', $id)->delete();
         $this->audit($request, 'design_deleted', ['id' => $id]);
 
         return response()->json(['ok' => true, 'data' => ['id' => $id]]);
+    }
+
+    public function uploadDesignPhotos(Request $request, string $id)
+    {
+        if ($err = $this->requireAuth($request)) {
+            return $err;
+        }
+
+        if (! DB::table('designs')->where('id', $id)->exists()) {
+            return response()->json([
+                'ok' => false,
+                'error' => ['code' => 'NOT_FOUND', 'message' => 'Design not found.'],
+            ], 404);
+        }
+
+        $data = $request->validate([
+            'preview_image' => 'nullable|image|max:8192',
+            'tryon_image' => 'nullable|image|max:8192',
+        ]);
+
+        $updates = ['updated_at' => now()];
+        if ($request->hasFile('preview_image')) {
+            $updates['preview_image'] = DesignMedia::storePreview($id, $request->file('preview_image'));
+        }
+        if ($request->hasFile('tryon_image')) {
+            $updates['tryon_image'] = DesignMedia::storeTryon($id, $request->file('tryon_image'));
+        }
+
+        if (count($updates) === 1) {
+            return response()->json([
+                'ok' => false,
+                'error' => ['code' => 'VALIDATION', 'message' => 'Upload at least one photo.'],
+            ], 422);
+        }
+
+        DB::table('designs')->where('id', $id)->update($updates);
+        $this->audit($request, 'design_photos_uploaded', ['id' => $id]);
+
+        return response()->json(['ok' => true, 'data' => $this->enrichDesign(DB::table('designs')->find($id))]);
+    }
+
+    private function enrichDesign(object $row): object
+    {
+        $row->preview_url = DesignMedia::url($row->preview_image ?? null);
+        $row->tryon_url = DesignMedia::url($row->tryon_image ?? null);
+
+        return $row;
     }
 
     public function colors(Request $request)

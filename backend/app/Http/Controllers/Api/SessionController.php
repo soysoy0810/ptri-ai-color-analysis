@@ -42,7 +42,7 @@ class SessionController extends Controller
         $session = KioskSession::findOrFail($id);
         $payload = $request->all();
 
-        $session->update([
+        $updates = [
             'status' => 'completed',
             'selection_mode' => $payload['selection_mode'] ?? null,
             'category_id' => $payload['category_id'] ?? null,
@@ -53,7 +53,13 @@ class SessionController extends Controller
             'selected_colors_json' => $payload['selected_colors'] ?? [],
             'payload_json' => $payload,
             'completed_at' => now(),
-        ]);
+        ];
+
+        if (!empty($payload['top20']) && is_array($payload['top20'])) {
+            $updates['top20_json'] = $payload['top20'];
+        }
+
+        $session->update($updates);
 
         return response()->json([
             'ok' => true,

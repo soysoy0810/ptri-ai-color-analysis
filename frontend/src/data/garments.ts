@@ -76,15 +76,46 @@ export const DESIGN_GARMENT: Record<string, GarmentKey> = {
   fb4: 'barong',
 };
 
-export function garmentForDesign(designId: string | null | undefined): GarmentKey {
+export function garmentForDesign(
+  designId: string | null | undefined,
+  garmentType?: string | null,
+): GarmentKey {
+  if (garmentType && garmentType in GARMENT_SRC) return garmentType as GarmentKey;
   if (designId && DESIGN_GARMENT[designId]) return DESIGN_GARMENT[designId];
   return 'polo';
 }
 
-/** Resolve kiosk gender string → model photo */
+/** Waist-up template photos — person already wearing shirt, hands/arms visible */
+export const TRYON_TEMPLATE_SRC: Record<ModelGender, string> = {
+  female: `${MODEL_BASE}/template-female-studio.png`,
+  male: `${MODEL_BASE}/template-male-office.png`,
+};
+
+/** Garments that need the standing model + overlay (unique silhouettes) */
+export const HERITAGE_GARMENTS: GarmentKey[] = ['barong', 'terno', 'filipiniana-blouse'];
+
+/** Torso tint region on waist-up template photos (% of template image) */
+export const TEMPLATE_TORSO_MASK: Record<GarmentKey, TorsoMask> = {
+  polo: { top: 0.22, bottom: 0.78, widthTop: 0.9, widthBottom: 0.72 },
+  'active-tee': { top: 0.21, bottom: 0.77, widthTop: 0.9, widthBottom: 0.74 },
+  'linen-shirt': { top: 0.2, bottom: 0.79, widthTop: 0.92, widthBottom: 0.74 },
+  'formal-shirt': { top: 0.2, bottom: 0.8, widthTop: 0.93, widthBottom: 0.76 },
+  barong: { top: 0.18, bottom: 0.82, widthTop: 0.94, widthBottom: 0.78 },
+  'collar-blouse': { top: 0.22, bottom: 0.78, widthTop: 0.9, widthBottom: 0.72 },
+  terno: { top: 0.18, bottom: 0.82, widthTop: 0.94, widthBottom: 0.78 },
+  'filipiniana-blouse': { top: 0.2, bottom: 0.8, widthTop: 0.92, widthBottom: 0.76 },
+};
+
 export function modelGenderFromProfile(gender: string | null | undefined): ModelGender {
   if (gender === 'male') return 'male';
   return 'female';
+}
+
+export function tryOnModelSrc(gender: ModelGender, garmentKey: GarmentKey): string {
+  if (HERITAGE_GARMENTS.includes(garmentKey)) {
+    return MODEL_SRC[gender];
+  }
+  return TRYON_TEMPLATE_SRC[gender];
 }
 
 /**
@@ -113,10 +144,31 @@ export const TORSO_MASK: Record<GarmentKey, TorsoMask> = {
   'filipiniana-blouse': { top: 0.12, bottom: 0.4, widthTop: 0.4, widthBottom: 0.38 },
 };
 
-/** Visitor face placement on the model head (% of model bounding box) */
+/** Visitor face placement on waist-up template photos */
 export const FACE_ON_MODEL: Record<ModelGender, { top: number; width: number }> = {
-  female: { top: 0.028, width: 0.27 },
-  male: { top: 0.032, width: 0.28 },
+  female: { top: 0.06, width: 0.24 },
+  male: { top: 0.065, width: 0.25 },
+};
+
+/** Waist-up portrait: where the visitor face sits on each garment */
+export interface GarmentPortraitLayout {
+  /** Neckline position on the drawn garment (0 = top) */
+  neckY: number;
+  /** Face width as fraction of portrait width */
+  faceWidth: number;
+  /** Chin overlap — fraction of face height below neckline */
+  chinAt: number;
+}
+
+export const GARMENT_PORTRAIT: Record<GarmentKey, GarmentPortraitLayout> = {
+  polo: { neckY: 0.1, faceWidth: 0.38, chinAt: 0.82 },
+  'active-tee': { neckY: 0.1, faceWidth: 0.38, chinAt: 0.82 },
+  'linen-shirt': { neckY: 0.11, faceWidth: 0.37, chinAt: 0.83 },
+  'formal-shirt': { neckY: 0.1, faceWidth: 0.37, chinAt: 0.82 },
+  barong: { neckY: 0.14, faceWidth: 0.4, chinAt: 0.84 },
+  'collar-blouse': { neckY: 0.12, faceWidth: 0.39, chinAt: 0.83 },
+  terno: { neckY: 0.2, faceWidth: 0.42, chinAt: 0.86 },
+  'filipiniana-blouse': { neckY: 0.17, faceWidth: 0.4, chinAt: 0.85 },
 };
 
 /** Scene backdrops for preview environments */

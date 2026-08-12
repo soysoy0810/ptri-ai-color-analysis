@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
 import { CheckCircle2, Mail, SendHorizonal } from 'lucide-react';
-import { garmentForDesign } from '../../data/garments';
+import { resolveGarmentKey, resolveTryonUrl } from '../../shared/lib/catalogStore';
 import type { FaceRegion, PaletteColor } from '../../shared/lib/types';
 import { LookComposer } from '../../shared/ui/LookComposer';
 
@@ -40,7 +40,8 @@ export function ResultsScreen({
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
-  const garmentKey = garmentForDesign(designId);
+  const garmentKey = resolveGarmentKey(designId);
+  const tryonImageUrl = resolveTryonUrl(designId);
 
   const resultUrl = useMemo(() => {
     const base = window.location.origin;
@@ -75,6 +76,7 @@ export function ResultsScreen({
           fabricHex={fabricHex}
           backgroundId={backgroundId}
           designName={designName}
+          tryonImageUrl={tryonImageUrl}
         />
       </div>
 

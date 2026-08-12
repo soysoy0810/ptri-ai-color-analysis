@@ -61,6 +61,8 @@ class CatalogSeeder extends Seeder
                 'category_id' => $row['category_id'],
                 'name' => $row['name'],
                 'style_code' => $row['style_code'] ?? null,
+                'garment_type' => self::GARMENT_MAP[$row['id']] ?? 'polo',
+                'audience' => $row['audience'] ?? 'unisex',
                 'is_active' => true,
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -84,4 +86,36 @@ class CatalogSeeder extends Seeder
     {
         return json_decode(File::get($path), true) ?: [];
     }
+
+    /** Default try-on garment shape per bundled design id */
+    private const GARMENT_MAP = [
+        'fp1' => 'barong',
+        'fp2' => 'terno',
+        'fp3' => 'filipiniana-blouse',
+        'fp4' => 'terno',
+        'u1' => 'polo',
+        'u2' => 'barong',
+        'u3' => 'collar-blouse',
+        'u4' => 'polo',
+        'ca1' => 'active-tee',
+        'ca2' => 'linen-shirt',
+        'ca3' => 'collar-blouse',
+        'ca4' => 'polo',
+        'sc1' => 'formal-shirt',
+        'sc2' => 'polo',
+        'sc3' => 'linen-shirt',
+        'sc4' => 'collar-blouse',
+        'f1' => 'formal-shirt',
+        'f2' => 'collar-blouse',
+        'f3' => 'formal-shirt',
+        'f4' => 'barong',
+        'a1' => 'active-tee',
+        'a2' => 'active-tee',
+        'a3' => 'polo',
+        'a4' => 'polo',
+        'fb1' => 'linen-shirt',
+        'fb2' => 'collar-blouse',
+        'fb3' => 'polo',
+        'fb4' => 'barong',
+    ];
 }

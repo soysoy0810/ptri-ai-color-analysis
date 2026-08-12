@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { BookOpenText, Droplets, Palette, Shirt } from 'lucide-react';
-import { CATEGORIES, DESIGNS } from '../../data/catalog';
+import { CATEGORIES } from '../../data/catalog';
+import { getDesignById } from '../../shared/lib/catalogStore';
 import type { SkinProfile } from '../../shared/lib/colorEngine';
 import type { PaletteColor, SessionSummary } from '../../shared/lib/types';
 
@@ -62,9 +63,7 @@ const TILES = [
 
 export function RecommendationScreen({ summary, skinProfile }: RecommendationScreenProps) {
   const category = CATEGORIES.find((c) => c.id === summary.categoryId);
-  const design =
-    (summary.categoryId && DESIGNS[summary.categoryId]?.find((d) => d.id === summary.designId)) ||
-    undefined;
+  const design = getDesignById(summary.designId);
   const fabric = summary.fabric;
   const profile = colorProfile(summary.colors, skinProfile);
 

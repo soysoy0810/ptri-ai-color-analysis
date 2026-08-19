@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-export function useCamera(active = true) {
+export function useCamera(active = true, video?: MediaTrackConstraints) {
   const videoRef = useRef<HTMLVideoElement>(null!);
   const streamRef = useRef<MediaStream | null>(null);
   const [ready, setReady] = useState(false);
@@ -13,7 +13,7 @@ export function useCamera(active = true) {
     async function start() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
+          video: video || {
             facingMode: 'user',
             width: { ideal: 1280 },
             height: { ideal: 720 },
@@ -43,7 +43,7 @@ export function useCamera(active = true) {
       streamRef.current = null;
       setReady(false);
     };
-  }, [active]);
+  }, [active, video]);
 
   const captureFrame = useCallback(() => {
     const video = videoRef.current;
@@ -60,5 +60,43 @@ export function useCamera(active = true) {
     };
   }, []);
 
-  return { videoRef, ready, error, captureFrame };
+  /** Same crop the visitor sees (object-cover in a 4:5 frame). */
+  const captureCoverFrame = useCallback((aspect = 4 / 5, maxWidth?: number) => {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth) return null;
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+    const videoAspect = vw / vh;
+    let sx = 0;
+    let sy = 0;
+    let sw = vw;
+    let sh = vh;
+    if (videoAspect > aspect) {
+      sw = Math.round(vh * aspect);
+      sx = Math.round((vw - sw) / 2);
+    } else {
+      sh = Math.round(vw / aspect);
+      sy = Math.round((vh - sh) / 2);
+    }
+    let dw = sw;
+    let dh = sh;
+    if (maxWidth && sw > maxWidth) {
+      const scale = maxWidth / sw;
+      dw = maxWidth;
+      dh = Math.round(sh * scale);
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = dw;
+    canvas.height = dh;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.drawImage(video, sx, sy, sw, sh, 0, 0, dw, dh);
+    return {
+      canvas,
+      dataUrl: canvas.toDataURL('image/jpeg', maxWidth ? 0.82 : 0.9),
+      crop: { sx, sy, sw, sh, vw, vh },
+    };
+  }, []);
+
+  return { videoRef, ready, error, captureFrame, captureCoverFrame };
 }

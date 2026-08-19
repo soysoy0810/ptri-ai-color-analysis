@@ -3,12 +3,15 @@ export type StepId =
   | 'welcome'
   | 'profile'
   | 'cameraGuide'
+  | 'skinTone'
   | 'analysis'
   | 'top20'
   | 'chooseTop'
+  | 'colorPreview'
   | 'category'
   | 'design'
   | 'fabric'
+  | 'accessories'
   | 'background'
   | 'preview'
   | 'recommendation'
@@ -24,6 +27,7 @@ export interface Profile {
   ageRange: string;
   gender: string;
   email: string;
+  purpose: string;
 }
 
 export interface PaletteColor {
@@ -33,6 +37,13 @@ export interface PaletteColor {
   sort_order?: number;
   score?: number;
   delta_e?: number;
+  reason?: string;
+  factors?: {
+    undertone_harmony?: number;
+    lightness_contrast?: number;
+    chroma_fit?: number;
+    washout_penalty?: number;
+  };
 }
 
 export interface FabricItem {
@@ -87,12 +98,21 @@ export interface FaceRegion {
   height: number;
 }
 
+/** Normalized MediaPipe face landmark [x, y] each 0..1 */
+export type FaceLandmark = [number, number];
+
+export type PortraitLighting = 'warm' | 'neutral' | 'cool';
+
 export interface SessionState {
   step: StepId;
   sessionId: string | null;
   profile: Profile;
   captureDataUrl: string | null;
   faceBox: FaceRegion | null;
+  faceLandmarks: FaceLandmark[] | null;
+  captureWidth: number | null;
+  captureHeight: number | null;
+  portraitLighting: PortraitLighting;
   lighting: LightingInfo | null;
   top20: PaletteColor[];
   selectionMode: SelectionMode;
@@ -102,6 +122,7 @@ export interface SessionState {
   backgroundId: string;
   fabricId: string | null;
   fabricMatches: FabricItem[];
+  selectedAccessories: string[];
   staffAlerted: boolean;
   resultToken: string | null;
 }
@@ -119,7 +140,15 @@ export type SessionAction =
   | { type: 'SET_STEP'; step: StepId }
   | { type: 'SET_PROFILE'; profile: Partial<Profile> }
   | { type: 'SET_SESSION'; sessionId: string }
-  | { type: 'SET_CAPTURE'; dataUrl: string; faceBox: FaceRegion | null }
+  | {
+      type: 'SET_CAPTURE';
+      dataUrl: string;
+      faceBox: FaceRegion | null;
+      faceLandmarks?: FaceLandmark[] | null;
+      width?: number;
+      height?: number;
+    }
+  | { type: 'SET_PORTRAIT_LIGHTING'; lighting: PortraitLighting }
   | { type: 'SET_LIGHTING'; lighting: LightingInfo }
   | { type: 'SET_TOP20'; top20: PaletteColor[] }
   | { type: 'SET_SELECTION_MODE'; mode: SelectionMode }
@@ -128,6 +157,7 @@ export type SessionAction =
   | { type: 'SET_DESIGN'; designId: string }
   | { type: 'SET_BACKGROUND'; backgroundId: string }
   | { type: 'SET_FABRIC'; fabricId: string }
+  | { type: 'TOGGLE_ACCESSORY'; accessory: string }
   | { type: 'SET_RESULT_TOKEN'; token: string }
   | { type: 'STAFF_ALERT' }
   | { type: 'RESET' };

@@ -13,18 +13,19 @@ interface DesignScreenProps {
 export function DesignScreen({ categoryId, selectedId, gender, onSelect }: DesignScreenProps) {
   const all = categoryId ? getDesignsForCategory(categoryId) : [];
   const knownGender = gender === 'male' || gender === 'female';
-  // AI ordering: designs made for the visitor first, then unisex, then the rest
-  const designs = knownGender
-    ? [...all].sort((a, b) => rank(a.audience, gender) - rank(b.audience, gender))
+  const visible = knownGender
+    ? all.filter((d) => !d.audience || d.audience === 'unisex' || d.audience === gender)
     : all;
+  const designs = knownGender
+    ? [...visible].sort((a, b) => rank(a.audience, gender) - rank(b.audience, gender))
+    : visible;
 
   return (
     <section className="screen">
-      <h1 className="screen-title">Select a design you like.</h1>
       <p className="screen-sub">
         {knownGender
-          ? 'AI sorted these styles for you — best matches first.'
-          : 'Real garment styles from the approved PTRI catalog.'}
+          ? 'AI sorted these styles for you — tap the outfit you want to wear.'
+          : 'Tap a garment photo to try it on in the next step.'}
       </p>
 
       <div className="grid grid-cols-2 gap-3">

@@ -5,8 +5,10 @@ use App\Http\Controllers\Api\AnalyzeController;
 use App\Http\Controllers\Api\CatalogController;
 use App\Http\Controllers\Api\MediaController;
 use App\Http\Controllers\Api\ResultController;
+use App\Http\Controllers\Api\SegmentController;
 use App\Http\Controllers\Api\SessionController;
 use App\Http\Controllers\Api\StaffAlertController;
+use App\Http\Controllers\Api\TryOnController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () {
@@ -27,6 +29,10 @@ Route::post('/sessions', [SessionController::class, 'store']);
 Route::post('/sessions/{id}/complete', [SessionController::class, 'complete']);
 Route::post('/sessions/{id}/email', [SessionController::class, 'email']);
 Route::post('/analyze', [AnalyzeController::class, 'store']);
+Route::post('/segment', [SegmentController::class, 'store']);
+Route::get('/tryon/runtime', [TryOnController::class, 'runtime']);
+Route::get('/tryon/status', [TryOnController::class, 'status']);
+Route::post('/tryon', [TryOnController::class, 'store']);
 Route::post('/staff-alerts', [StaffAlertController::class, 'store']);
 Route::get('/results/{token}', [ResultController::class, 'show']);
 

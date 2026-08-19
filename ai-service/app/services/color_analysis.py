@@ -2,14 +2,21 @@ from __future__ import annotations
 
 import base64
 import io
-import math
+import logging
 from typing import Dict, List, Tuple
 
+import numpy as np
 from PIL import Image, ImageStat
 
 from ..core.config import MODEL_NAME, MODEL_VERSION
-from ..core.palette import hex_to_rgb, load_palette
+from .color_science import classify_skin_lab, lab_to_rgb, rank_palette, rgb_to_lab
 from .face_detector import crop_face, get_face_detector
+from .skin_sampler import get_face_landmarks, sample_skin_tone
+
+log = logging.getLogger("ptri.skin")
+
+Rgb = Tuple[float, float, float]
+Lab = Tuple[float, float, float]
 
 
 def decode_image(data_url: str) -> Image.Image:
@@ -18,88 +25,222 @@ def decode_image(data_url: str) -> Image.Image:
     return Image.open(io.BytesIO(binary)).convert("RGB")
 
 
-def average_rgb(img: Image.Image) -> Tuple[float, float, float]:
+def average_rgb(img: Image.Image) -> Rgb:
     sample = img.resize((64, 64))
     stats = ImageStat.Stat(sample)
     return stats.mean[0], stats.mean[1], stats.mean[2]
 
 
-def rgb_to_lab(r: float, g: float, b: float) -> Tuple[float, float, float]:
-    def pivot(c: float) -> float:
-        c = c / 255.0
-        return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+def lighting_quality(img: Image.Image, region=None) -> Dict[str, float | str]:
+    """Judge exposure on the face, not the whole frame.
 
-    r_l, g_l, b_l = pivot(r), pivot(g), pivot(b)
-    x = (r_l * 0.4124 + g_l * 0.3576 + b_l * 0.1805) / 0.95047
-    y = (r_l * 0.2126 + g_l * 0.7152 + b_l * 0.0722) / 1.00000
-    z = (r_l * 0.0193 + g_l * 0.1192 + b_l * 0.9505) / 1.08883
+    A dark studio backdrop used to inflate contrast and get labelled as
+    harsh lighting even when the face itself was evenly lit.
+    """
+    sample = img
+    if region is not None:
+        box = (
+            max(0, region.left),
+            max(0, region.top),
+            min(img.size[0], region.right),
+            min(img.size[1], region.bottom),
+        )
+        if box[2] > box[0] and box[3] > box[1]:
+            bw, bh = box[2] - box[0], box[3] - box[1]
+            inset_x, inset_y = int(bw * 0.22), int(bh * 0.18)
+            sample = img.crop(
+                (
+                    box[0] + inset_x,
+                    box[1] + inset_y,
+                    box[2] - inset_x,
+                    box[3] - inset_y,
+                )
+            )
+    else:
+        w, h = img.size
+        sample = img.crop((int(w * 0.25), int(h * 0.18), int(w * 0.75), int(h * 0.72)))
 
-    def f(t: float) -> float:
-        return t ** (1 / 3) if t > 0.008856 else (7.787 * t) + (16 / 116)
-
-    fx, fy, fz = f(x), f(y), f(z)
-    return (116 * fy) - 16, 500 * (fx - fy), 200 * (fy - fz)
-
-
-def delta_e(lab1: Tuple[float, float, float], lab2: Tuple[float, float, float]) -> float:
-    return math.sqrt(sum((a - b) ** 2 for a, b in zip(lab1, lab2)))
-
-
-def lighting_quality(img: Image.Image) -> Dict[str, float | str]:
-    gray = img.convert("L")
+    gray = sample.convert("L")
     stats = ImageStat.Stat(gray)
     mean = stats.mean[0]
     stddev = stats.stddev[0]
     status = "good"
-    if mean < 55:
+    if mean < 80:
         status = "too_dark"
-    elif mean > 210:
+    elif mean > 215:
         status = "too_bright"
-    elif stddev < 18:
-        status = "flat_lighting"
+    elif stddev > 55:
+        status = "harsh_shadows"
     return {"mean_luma": round(mean, 1), "contrast": round(stddev, 1), "status": status}
 
 
-def rank_palette(sample_rgb: Tuple[float, float, float]) -> List[dict]:
-    sample_lab = rgb_to_lab(*sample_rgb)
-    ranked = []
-    for color in load_palette():
-        rgb = hex_to_rgb(color["hex"])
-        dist = delta_e(sample_lab, rgb_to_lab(*rgb))
-        warmth = ((sample_rgb[0] - sample_rgb[2]) - (rgb[0] - rgb[2])) / 255.0
-        score = max(0.0, 100.0 - dist * 1.35 - abs(warmth) * 8.0)
-        ranked.append(
-            {
-                "id": color["id"],
-                "name": color["name"],
-                "hex": color["hex"],
-                "score": round(score, 1),
-                "delta_e": round(dist, 2),
-            }
-        )
-    ranked.sort(key=lambda c: c["score"], reverse=True)
-    return ranked
+def _robust_lab(labs: List[Lab]) -> Lab:
+    """Median Lab; drop extreme L* frames when enough samples exist."""
+    arr = np.asarray(labs, dtype=np.float64)
+    if len(arr) >= 5:
+        order = np.argsort(arr[:, 0])
+        arr = arr[order[1:-1]]
+    med = np.median(arr, axis=0)
+    return float(med[0]), float(med[1]), float(med[2])
 
 
-def analyze_image(data_url: str, session_id: str | None = None) -> dict:
-    img = decode_image(data_url)
-    quality = lighting_quality(img)
+def _sample_frame(img: Image.Image) -> dict:
+    """Landmark skin sample for one frame. No scene-wide white balance.
 
+    Gray-world on the whole photo was flipping undertone under warm/cool
+    kiosk lights. Lighting is reported, not "corrected" into the pixels.
+    """
     detector = get_face_detector()
     region = detector.detect(img)
     face_detected = region is not None
     if region is None:
-        # Still return a usable palette using center crop so the kiosk flow continues.
         from .face_detector import CenterCropFaceDetector
 
         region = CenterCropFaceDetector().detect(img)
 
-    face = crop_face(img, region)
-    sample = average_rgb(face)
+    quality = lighting_quality(img, region)
 
+    landmarks = get_face_landmarks(img)
+    skin_result = sample_skin_tone(img, landmarks) if landmarks else None
+    if skin_result is not None:
+        sample, region_samples = skin_result
+        sample_source = "face_mesh_skin_patches"
+        lumas = [
+            0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]
+            for rgb in region_samples.values()
+        ]
+        if lumas:
+            patch_std = float(np.std(lumas)) if len(lumas) > 1 else 0.0
+            patch_mean = float(np.mean(lumas))
+            status = str(quality["status"])
+            if float(quality["mean_luma"]) < 80 or patch_mean < 75:
+                status = "too_dark"
+            elif patch_std > 32:
+                status = "harsh_shadows"
+            elif status == "harsh_shadows" and patch_std <= 32:
+                # Face-box contrast was hair/background; skin regions agree.
+                status = "good"
+            quality = {
+                "mean_luma": round(float(quality["mean_luma"]), 1),
+                "contrast": round(patch_std, 1),
+                "status": status,
+            }
+    else:
+        face = crop_face(img, region)
+        fw, fh = face.size
+        inset = face.crop(
+            (int(fw * 0.30), int(fh * 0.35), int(fw * 0.70), int(fh * 0.75))
+        )
+        sample = average_rgb(inset if inset.size[0] and inset.size[1] else face)
+        region_samples = {}
+        sample_source = "bbox_center_fallback"
+
+    lab = rgb_to_lab(*sample)
+    region_labs = {name: rgb_to_lab(*rgb) for name, rgb in region_samples.items()}
+    return {
+        "sample": sample,
+        "lab": lab,
+        "region_samples": region_samples,
+        "region_labs": region_labs,
+        "quality": quality,
+        "face_detected": face_detected,
+        "region": region,
+        "sample_source": sample_source,
+    }
+
+
+def analyze_image(
+    data_url: str,
+    session_id: str | None = None,
+    extra_images: List[str] | None = None,
+) -> dict:
+    """Multi-frame camera-based skin analysis.
+
+    Primary image is the identity capture. extra_images are additional
+    hold-still frames. Classification uses the robust median of Lab
+    across frames that produced a usable skin sample.
+    """
+    urls: List[str] = [data_url]
+    if extra_images:
+        urls.extend(item for item in extra_images if item)
+    urls = urls[:8]
+
+    frames: List[dict] = []
+    for url in urls:
+        try:
+            img = decode_image(url)
+        except Exception:
+            continue
+        try:
+            frames.append(_sample_frame(img))
+        except Exception:
+            log.exception("skin frame sample failed")
+
+    if not frames:
+        raise ValueError("No analyzable frames were received.")
+
+    usable = [f for f in frames if f["sample_source"] == "face_mesh_skin_patches"]
+    if not usable:
+        usable = frames
+
+    labs = [f["lab"] for f in usable]
+    median_lab = _robust_lab(labs)
+    sample = lab_to_rgb(median_lab)
+
+    primary = frames[0]
+    lighting_statuses = [str(f["quality"]["status"]) for f in usable]
+    if "too_dark" in lighting_statuses and lighting_statuses.count("too_dark") >= max(1, len(usable) // 2):
+        lighting_status = "too_dark"
+    elif "too_bright" in lighting_statuses and lighting_statuses.count("too_bright") >= max(1, len(usable) // 2):
+        lighting_status = "too_bright"
+    elif all(s == "harsh_shadows" for s in lighting_statuses):
+        lighting_status = "harsh_shadows"
+    else:
+        lighting_status = str(primary["quality"]["status"])
+
+    region_labs = list(primary["region_labs"].values())
+    frame_itas = [
+        float(np.degrees(np.arctan2(lab[0] - 50.0, lab[2] if lab[2] else 1e-6)))
+        for lab in labs
+    ]
+
+    extras = {
+        "lighting_status": lighting_status,
+        "region_labs": region_labs,
+        "frame_itas": frame_itas,
+        "frames_used": len(usable),
+        "regions_used": len(primary["region_labs"]),
+    }
+
+    skin_profile = classify_skin_lab(median_lab, extras)
+    top20 = rank_palette(sample, skin_profile)
+
+    log.info(
+        "skin_analysis L=%.2f a=%.2f b=%.2f ITA=%.1f hue=%.1f undertone=%s depth=%s "
+        "confidence=%.1f frames=%s regions=%s lighting=%s source=%s",
+        median_lab[0],
+        median_lab[1],
+        median_lab[2],
+        skin_profile["ita"],
+        skin_profile["hue_angle"],
+        skin_profile["undertone"],
+        skin_profile["depth"],
+        skin_profile["confidence"],
+        len(usable),
+        extras["regions_used"],
+        lighting_status,
+        primary["sample_source"],
+    )
+
+    quality = dict(primary["quality"])
+    quality["status"] = lighting_status
+    quality["frames_used"] = len(usable)
+    quality["frames_received"] = len(frames)
+
+    region = primary["region"]
     return {
         "session_id": session_id,
-        "face_detected": face_detected,
+        "face_detected": any(f["face_detected"] for f in frames),
         "face_region": {
             "left": region.left,
             "top": region.top,
@@ -114,11 +255,21 @@ def analyze_image(data_url: str, session_id: str | None = None) -> dict:
             "g": round(sample[1], 1),
             "b": round(sample[2], 1),
         },
-        "top20": rank_palette(sample),
+        "skin_regions": {
+            name: {"r": round(v[0], 1), "g": round(v[1], 1), "b": round(v[2], 1)}
+            for name, v in primary["region_samples"].items()
+        },
+        "skin_profile": skin_profile,
+        "top20": top20,
         "model": {
             "name": MODEL_NAME,
             "version": MODEL_VERSION,
             "face_provider": region.provider,
-            "notes": "Pretrained MediaPipe when available; swappable via face_detector.get_face_detector().",
+            "sample_source": primary["sample_source"],
+            "white_balance": "none",
+            "aggregation": "trimmed_median_lab",
+            "scoring": "undertone_harmony+lightness_contrast+chroma_fit-washout",
+            "notes": "Camera-based ITA + Lab hue. Not a spectrophotometer.",
+            "frames_used": str(len(usable)),
         },
     }

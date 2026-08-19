@@ -1,122 +1,162 @@
 import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
-import { BACKGROUNDS, CATEGORIES, FABRICS } from '../../data/catalog';
+import { BACKGROUNDS } from '../../data/catalog';
+import { getDesignById, resolvePreviewUrl, resolveVtonGarmentUrl, vtonCategoryForDesign, vtonDescriptionForDesign } from '../../shared/lib/catalogStore';
 import { BACKGROUND_SRC } from '../../data/garments';
-import { getDesignById, resolveGarmentKey, resolveTryonUrl } from '../../shared/lib/catalogStore';
-import type { FaceRegion, PaletteColor } from '../../shared/lib/types';
-import { DostPtriLogo } from '../../shared/ui/DostPtriLogo';
-import { LookComposer } from '../../shared/ui/LookComposer';
+import { VirtualTryOn } from '../../shared/ui/VirtualTryOn';
+import { textileSrc, type TextileId } from '../../data/textiles';
+import type { PortraitLighting } from '../../shared/lib/types';
+
+const LIGHTING_OPTIONS: Array<{ id: PortraitLighting; label: string; swatch: string }> = [
+  { id: 'warm', label: 'Warm', swatch: '#E8C48A' },
+  { id: 'neutral', label: 'Neutral', swatch: '#E2E8F0' },
+  { id: 'cool', label: 'Cool', swatch: '#93C5FD' },
+];
 
 interface PreviewScreenProps {
   captureDataUrl: string | null;
-  faceBox: FaceRegion | null;
-  gender: string;
-  categoryId: string | null;
   designId: string | null;
+  fabricHex: string;
+  fabricName?: string;
+  textileId?: TextileId | null;
   backgroundId: string;
-  fabricId: string | null;
-  selectedColors: PaletteColor[];
   onBackgroundSelect: (backgroundId: string) => void;
+  lighting: PortraitLighting;
+  onLightingChange: (lighting: PortraitLighting) => void;
+  onTryOnGenerated?: (imageDataUrl: string) => void;
+  onTryOnFailed?: () => void;
 }
 
 /**
- * Kiosk-style preview like the DNA Heritage booth in the reference video:
- * scene thumbnails on top, full-screen try-on hero, info bar at bottom.
+ * Preview of the generative try-on. Clothing is transferred by the AI
+ * service onto the session scan captured at the start — this screen
+ * never opens the camera or asks for another scan.
  */
 export function PreviewScreen({
   captureDataUrl,
-  faceBox,
-  gender,
-  categoryId,
   designId,
+  fabricHex,
+  fabricName,
+  textileId = null,
   backgroundId,
-  fabricId,
-  selectedColors,
   onBackgroundSelect,
+  lighting,
+  onLightingChange,
+  onTryOnGenerated,
+  onTryOnFailed,
 }: PreviewScreenProps) {
-  const fabric = FABRICS.find((f) => f.id === fabricId);
-  const garmentColor = fabric?.hex || selectedColors[0]?.hex || '#1E4D8C';
-  const category = CATEGORIES.find((c) => c.id === categoryId);
   const design = getDesignById(designId);
-  const garmentKey = resolveGarmentKey(designId);
-  const tryonImageUrl = resolveTryonUrl(designId);
+  const designPhoto = resolvePreviewUrl(designId);
+  const vtonGarmentUrl = resolveVtonGarmentUrl(designId);
+  const vtonCategory = vtonCategoryForDesign(designId);
+  const vtonName = vtonDescriptionForDesign(designId, design?.name || 'outfit');
 
   return (
     <section className="-mx-5 -mt-4 flex h-full min-h-0 flex-col overflow-hidden">
-      {/* Top strip — tap scenes like the reference kiosk costume row */}
-      <div className="shrink-0 bg-gradient-to-b from-sky-100 to-sky-50/80 px-3 pb-2.5 pt-1">
-        <p className="mb-2 text-center text-[10px] font-extrabold uppercase tracking-[0.14em] text-navy/70">
-          Tap a scene
+      <div className="shrink-0 px-5 pb-2 pt-1">
+        <p className="mb-0 text-[0.95rem] font-semibold leading-relaxed text-navy">
+          See how your selected clothing, textile and colors look on you.
         </p>
-        <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {BACKGROUNDS.map((bg, i) => {
-            const active = backgroundId === bg.id;
-            const thumb = BACKGROUND_SRC[bg.id];
-            return (
-              <motion.button
-                key={bg.id}
-                type="button"
-                onClick={() => onBackgroundSelect(bg.id)}
-                className={`relative shrink-0 overflow-hidden rounded-xl border-2 transition ${
-                  active ? 'border-accent shadow-md' : 'border-white/80 opacity-85'
-                }`}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-                whileTap={{ scale: 0.94 }}
-              >
-                <img src={thumb} alt={bg.label} className="h-14 w-14 object-cover" draggable={false} />
-                {active ? (
-                  <span className="absolute right-0.5 top-0.5 grid h-4 w-4 place-items-center rounded-full bg-accent text-white">
-                    <Check className="h-2.5 w-2.5" strokeWidth={3} />
-                  </span>
-                ) : null}
-              </motion.button>
-            );
-          })}
-        </div>
       </div>
 
-      {/* Full-screen hero try-on — fills the kiosk like the reference video */}
-      <motion.div
-        className="relative min-h-0 flex-1"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.45 }}
-      >
-        <LookComposer
-          fullBleed
-          captureDataUrl={captureDataUrl}
-          faceBox={faceBox}
-          gender={gender}
-          garmentKey={garmentKey}
-          fabricHex={garmentColor}
-          backgroundId={backgroundId}
-          designName={design?.name}
-          tryonImageUrl={tryonImageUrl}
-        />
-      </motion.div>
+      <div className="flex min-h-0 flex-1 gap-3 px-5 pb-3">
+        <motion.div
+          className="relative min-h-0 flex-1 overflow-hidden rounded-2xl shadow-kiosk"
+          initial={{ opacity: 0, scale: 0.97 }}
+          animate={{ opacity: 1, scale: 1 }}
+        >
+          <VirtualTryOn
+            className="h-full w-full"
+            captureDataUrl={captureDataUrl}
+            garmentUrl={vtonGarmentUrl}
+            garmentName={vtonName}
+            category={vtonCategory}
+            fabricHex={fabricHex}
+            textileName={fabricName}
+            textileUrl={textileSrc(textileId)}
+            accessoryItems={[]}
+            backgroundId={backgroundId}
+            lighting={lighting}
+            onGenerated={onTryOnGenerated}
+            onFailed={onTryOnFailed}
+          />
+        </motion.div>
 
-      {/* Bottom info bar — fabric + design + PTRI */}
-      <motion.div
-        className="flex shrink-0 items-center gap-3 border-t border-line/80 bg-white px-4 py-2.5"
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-      >
-        <DostPtriLogo className="h-8 w-8 shrink-0" />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[12px] font-extrabold text-navy">{design?.name || 'Your Look'}</p>
-          <p className="truncate text-[10px] font-semibold text-muted">
-            {category?.label} · {fabric ? `PTRI ${fabric.code}` : 'PTRI Fabric'}
-          </p>
+        <div className="flex w-[124px] shrink-0 flex-col gap-3 overflow-y-auto">
+          {design ? (
+            <div className="rounded-xl border border-line bg-white p-2.5">
+              <p className="mb-2 text-[9px] font-extrabold uppercase tracking-wide text-muted">Your Outfit</p>
+              {designPhoto ? (
+                <img
+                  src={designPhoto}
+                  alt={design.name}
+                  className="mb-1.5 h-20 w-full rounded-lg object-contain"
+                  draggable={false}
+                />
+              ) : null}
+              <p className="text-[9px] font-bold leading-tight text-navy">{design.name}</p>
+              {fabricName ? (
+                <p className="mt-1 text-[8px] font-semibold text-muted">{fabricName}</p>
+              ) : null}
+            </div>
+          ) : null}
+
+          <div className="rounded-xl border border-line bg-white p-2.5">
+            <p className="mb-2 text-[9px] font-extrabold uppercase tracking-wide text-muted">Background</p>
+            <div className="grid grid-cols-2 gap-1.5">
+              {BACKGROUNDS.map((bg) => {
+                const active = backgroundId === bg.id;
+                const thumb = BACKGROUND_SRC[bg.id];
+                return (
+                  <button
+                    key={bg.id}
+                    type="button"
+                    onClick={() => onBackgroundSelect(bg.id)}
+                    className={`relative overflow-hidden rounded-md border-2 transition ${
+                      active ? 'border-accent' : 'border-transparent opacity-80'
+                    }`}
+                  >
+                    <img src={thumb} alt={bg.label} className="h-9 w-full object-cover" draggable={false} />
+                    {active ? (
+                      <span className="absolute right-0.5 top-0.5 grid h-3 w-3 place-items-center rounded-full bg-accent text-white">
+                        <Check className="h-2 w-2" strokeWidth={4} />
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-line bg-white p-2.5">
+            <p className="mb-1 text-[9px] font-extrabold uppercase tracking-wide text-muted">Accessories</p>
+            <p className="text-[9px] font-semibold leading-snug text-muted">AI generation coming soon.</p>
+          </div>
+
+          <div className="rounded-xl border border-line bg-white p-2.5">
+            <p className="mb-2 text-[9px] font-extrabold uppercase tracking-wide text-muted">Lighting</p>
+            <div className="flex flex-col gap-1.5">
+              {LIGHTING_OPTIONS.map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => onLightingChange(opt.id)}
+                  className={`flex items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-bold transition ${
+                    lighting === opt.id ? 'bg-accent text-white' : 'bg-slate-50 text-navy'
+                  }`}
+                >
+                  <span
+                    className="h-3.5 w-3.5 shrink-0 rounded-full border border-black/10"
+                    style={{ background: opt.swatch }}
+                  />
+                  {opt.label}
+                  {lighting === opt.id ? <Check className="ml-auto h-3 w-3" strokeWidth={3} /> : null}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
-        <span
-          className="h-9 w-9 shrink-0 rounded-full border-2 border-white shadow-md ring-1 ring-black/10"
-          style={{ background: garmentColor }}
-          title={fabric?.name}
-        />
-      </motion.div>
+      </div>
     </section>
   );
 }

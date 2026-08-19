@@ -27,7 +27,8 @@ export function ChooseTopScreen({
 
   return (
     <section className="screen">
-      <h1 className="screen-title">Select the colors you love most.</h1>
+      <h1 className="screen-title">Choose your color palette.</h1>
+      <p className="screen-sub">Tap TOP 5 or TOP 10, or pick colors yourself.</p>
 
       {/* Mode tabs — TOP 5 / TOP 10 / CUSTOM like the board */}
       <div className="mb-4 grid grid-cols-3 gap-1.5 rounded-2xl bg-accent-soft p-1.5">

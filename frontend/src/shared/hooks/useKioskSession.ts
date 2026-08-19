@@ -11,33 +11,34 @@ export const STEPS: StepId[] = [
   'welcome',
   'profile',
   'cameraGuide',
+  'skinTone',
   'analysis',
   'top20',
-  'chooseTop',
+  'colorPreview',
   'category',
-  'design',
   'fabric',
-  'background',
   'preview',
-  'recommendation',
   'results',
   'thanks',
 ];
 
 export const STEP_LABELS: Record<StepId, string> = {
   welcome: 'WELCOME',
-  profile: 'ABOUT YOU',
-  cameraGuide: 'CAMERA GUIDE',
-  analysis: 'ANALYZING',
-  top20: 'YOUR TOP 20 COLORS',
-  chooseTop: 'CHOOSE YOUR TOP COLORS',
-  category: 'CHOOSE CATEGORY',
-  design: 'SELECT DESIGN',
-  fabric: 'SELECT PTRI TEXTILE',
+  profile: 'ENTER YOUR INFORMATION',
+  cameraGuide: 'FACE SCAN',
+  skinTone: 'SKIN TONE DETECTION',
+  analysis: 'AI PROCESSING & ANALYSIS',
+  top20: 'AI COLOR RECOMMENDATION',
+  chooseTop: 'CHOOSE YOUR COLOR PALETTE',
+  colorPreview: 'PREVIEW ON YOU',
+  category: 'CHOOSE YOUR STYLE',
+  design: 'CHOOSE YOUR STYLE',
+  fabric: 'CHOOSE YOUR TEXTILE & FABRIC',
+  accessories: 'ADD-ONS',
   background: 'CHOOSE BACKGROUND',
-  preview: 'PREVIEW YOUR LOOK',
-  recommendation: 'AI RECOMMENDATION',
-  results: 'GET YOUR RESULT',
+  preview: 'YOUR AI LOOK',
+  recommendation: 'YOUR RESULT',
+  results: 'YOUR RESULT',
   thanks: 'THANK YOU',
 };
 
@@ -49,9 +50,14 @@ const initialState: SessionState = {
     ageRange: '',
     gender: '',
     email: '',
+    purpose: 'Personal Use',
   },
   captureDataUrl: null,
   faceBox: null,
+  faceLandmarks: null,
+  captureWidth: null,
+  captureHeight: null,
+  portraitLighting: 'neutral',
   lighting: null,
   top20: [],
   selectionMode: 'top5',
@@ -61,6 +67,7 @@ const initialState: SessionState = {
   backgroundId: 'studio',
   fabricId: null,
   fabricMatches: [],
+  selectedAccessories: [],
   staffAlerted: false,
   resultToken: null,
 };
@@ -74,19 +81,31 @@ function reducer(state: SessionState, action: SessionAction): SessionState {
     case 'SET_SESSION':
       return { ...state, sessionId: action.sessionId };
     case 'SET_CAPTURE':
-      return { ...state, captureDataUrl: action.dataUrl, faceBox: action.faceBox };
+      return {
+        ...state,
+        captureDataUrl: action.dataUrl,
+        faceBox: action.faceBox,
+        faceLandmarks: action.faceLandmarks ?? null,
+        captureWidth: action.width ?? state.captureWidth,
+        captureHeight: action.height ?? state.captureHeight,
+      };
+    case 'SET_PORTRAIT_LIGHTING':
+      return { ...state, portraitLighting: action.lighting };
     case 'SET_LIGHTING':
       return { ...state, lighting: action.lighting };
     case 'SET_TOP20':
       return { ...state, top20: action.top20 };
     case 'SET_SELECTION_MODE':
       return { ...state, selectionMode: action.mode };
-    case 'SET_SELECTED_COLORS':
+    case 'SET_SELECTED_COLORS': {
+      const fabricMatches = matchFabrics(action.colors);
       return {
         ...state,
         selectedColors: action.colors,
-        fabricMatches: matchFabrics(action.colors),
+        fabricMatches,
+        fabricId: state.fabricId || fabricMatches[0]?.id || null,
       };
+    }
     case 'SET_CATEGORY':
       return { ...state, categoryId: action.categoryId, designId: null };
     case 'SET_DESIGN':
@@ -95,6 +114,16 @@ function reducer(state: SessionState, action: SessionAction): SessionState {
       return { ...state, backgroundId: action.backgroundId };
     case 'SET_FABRIC':
       return { ...state, fabricId: action.fabricId };
+    case 'TOGGLE_ACCESSORY': {
+      const acc = action.accessory;
+      const alreadySelected = state.selectedAccessories.includes(acc);
+      return {
+        ...state,
+        selectedAccessories: alreadySelected
+          ? state.selectedAccessories.filter((a) => a !== acc)
+          : [...state.selectedAccessories, acc],
+      };
+    }
     case 'SET_RESULT_TOKEN':
       return { ...state, resultToken: action.token };
     case 'STAFF_ALERT':

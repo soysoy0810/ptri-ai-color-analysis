@@ -43,7 +43,7 @@ export function InfoScreen({ profile, onChange }: InfoScreenProps) {
 
       <div className="field">
         <label>Gender</label>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           {GENDERS.map((g) => (
             <button
               key={g.id}

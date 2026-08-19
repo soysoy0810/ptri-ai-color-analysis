@@ -3,6 +3,8 @@ uvicorn[standard]==0.32.1
 numpy==2.0.2
 Pillow==11.0.0
 python-multipart==0.0.17
-# Optional pretrained face model (install when network allows):
-# mediapipe==0.10.18
-
+mediapipe==0.10.18
+python-dotenv==1.0.1
+replicate==1.0.7
+gradio_client==1.3.0
+requests==2.32.3

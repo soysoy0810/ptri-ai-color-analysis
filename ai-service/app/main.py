@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import os
+import threading
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -19,3 +22,27 @@ app.add_middleware(
 )
 
 app.include_router(router)
+
+
+@app.on_event("startup")
+def _warmup_tryon_client() -> None:
+    """Connect to IDM-VTON once at boot so the first visitor is not waiting on Gradio handshake."""
+    if os.getenv("VTON_PROVIDER", "none").strip().lower() not in (
+        "huggingface",
+        "hf",
+        "huggingface_idm_vton",
+        "huggingface_catvton",
+        "catvton_hf",
+    ):
+        return
+
+    def _run() -> None:
+        try:
+            from .services.tryon import HF_VTON_SPACES, _hf_client
+
+            if HF_VTON_SPACES:
+                _hf_client(HF_VTON_SPACES[0])
+        except Exception:
+            pass
+
+    threading.Thread(target=_run, daemon=True).start()

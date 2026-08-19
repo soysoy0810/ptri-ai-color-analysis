@@ -1,4 +1,5 @@
 [
+  { "id": "tela", "label": "Textile", "tone": "#E8E0D2", "sort_order": 0 },
   { "id": "studio", "label": "Studio", "tone": "#E8EEF5", "sort_order": 1 },
   { "id": "office", "label": "Office", "tone": "#D9E2EC", "sort_order": 2 },
   { "id": "living", "label": "Living Room", "tone": "#EDE6DC", "sort_order": 3 },

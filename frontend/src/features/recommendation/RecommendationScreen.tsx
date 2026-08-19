@@ -3,6 +3,7 @@ import { BookOpenText, Droplets, Palette, Shirt } from 'lucide-react';
 import { CATEGORIES } from '../../data/catalog';
 import { getDesignById } from '../../shared/lib/catalogStore';
 import type { SkinProfile } from '../../shared/lib/colorEngine';
+import { depthLabel, undertoneLabel } from '../../shared/lib/colorEngine';
 import type { PaletteColor, SessionSummary } from '../../shared/lib/types';
 
 interface RecommendationScreenProps {
@@ -19,15 +20,19 @@ function colorProfile(
   skin?: SkinProfile | null,
 ): { name: string; blurb: string } {
   if (skin) {
-    const tone = skin.undertone[0].toUpperCase() + skin.undertone.slice(1);
-    const depth = skin.depth[0].toUpperCase() + skin.depth.slice(1);
+    const tone = undertoneLabel(skin.undertone);
+    const depth = depthLabel(skin.depth);
+    const conf = Math.round(skin.confidence);
     const blurb =
-      skin.undertone === 'warm'
-        ? 'Your skin has golden warm undertones — earthy, golden and rich colors flatter you most.'
-        : skin.undertone === 'cool'
-          ? 'Your skin has cool rosy undertones — jewel tones, blues and crisp colors flatter you most.'
-          : 'Your skin has balanced neutral undertones — both warm and cool colors work beautifully on you.';
-    return { name: `${tone} – ${depth}`, blurb };
+      skin.undertone === 'warm' || skin.undertone === 'warm-neutral'
+        ? 'Camera-based analysis found a warm-leaning undertone — earthy and golden colors tend to flatter most.'
+        : skin.undertone === 'cool' || skin.undertone === 'cool-neutral'
+          ? 'Camera-based analysis found a cool-leaning undertone — jewel tones and blues tend to flatter most.'
+          : 'Camera-based analysis found a balanced undertone — both warm and cool colors can work.';
+    return {
+      name: `${tone} – ${depth}`,
+      blurb: conf ? `${blurb} Confidence ${conf}%.` : blurb,
+    };
   }
   if (!colors.length) {
     return { name: 'Balanced', blurb: 'A versatile palette works well for you.' };
@@ -69,8 +74,8 @@ export function RecommendationScreen({ summary, skinProfile }: RecommendationScr
 
   return (
     <section className="screen">
-      <h1 className="screen-title">AI Recommendation</h1>
-      <p className="screen-sub">Based on your analysis, these are our recommendations.</p>
+      <h1 className="screen-title">Your personalized AI Color &amp; Textile Recommendation.</h1>
+      <p className="screen-sub">Your final look summary from the real skin-tone analysis.</p>
 
       {/* Color profile card */}
       <motion.div
@@ -136,6 +141,14 @@ export function RecommendationScreen({ summary, skinProfile }: RecommendationScr
         <div className="flex justify-between gap-3 text-sm">
           <span className="text-muted">Fabric</span>
           <strong className="text-navy">{fabric?.name || '—'}</strong>
+        </div>
+        <div className="flex justify-between gap-3 text-sm">
+          <span className="text-muted">Best Style</span>
+          <strong className="text-navy">{category?.label || '—'}</strong>
+        </div>
+        <div className="flex justify-between gap-3 text-sm">
+          <span className="text-muted">Best Fabrics</span>
+          <strong className="text-navy">{fabric?.name || 'Cotton, Silk, Linen'}</strong>
         </div>
         <div className="flex justify-between gap-3 text-sm">
           <span className="text-muted">Match</span>

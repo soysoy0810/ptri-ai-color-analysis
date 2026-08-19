@@ -1,6 +1,6 @@
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Cpu, Layers, Sparkles, UserRound } from 'lucide-react';
-import { FEATURE_BULLETS } from '../../data/catalog';
+import { Camera, Download, Layers, Palette, Shirt, WandSparkles } from 'lucide-react';
 import { useLiveClock } from '../../shared/hooks/useLiveClock';
 import { DostPtriLogo } from '../../shared/ui/DostPtriLogo';
 import { TouchPulseCue } from '../../shared/ui/TouchPulseCue';
@@ -11,27 +11,76 @@ interface WelcomeScreenProps {
 
 const ART = `${import.meta.env.BASE_URL}brand/home-art-clean.png`;
 
-const ICONS = {
-  ai: Cpu,
-  textiles: Layers,
-  personal: UserRound,
-} as const;
+const HOME_STEPS = [
+  { id: 'start', title: 'Start Analysis', Icon: Camera },
+  { id: 'skin', title: 'Skin Tone Detection', Icon: Palette },
+  { id: 'color', title: 'AI Color Recommendation', Icon: WandSparkles },
+  { id: 'textiles', title: 'Explore Textiles', Icon: Layers },
+  { id: 'style', title: 'Style Your Look', Icon: Shirt },
+  { id: 'result', title: 'View Your Result', Icon: Download },
+] as const;
 
-function FaceMeshPulse({ className = '' }: { className?: string }) {
-  const nodes: Array<[number, number]> = [
-    [30, 10], [52, 6], [72, 13], [86, 27], [66, 23], [44, 19],
-    [78, 43], [60, 39], [88, 59], [70, 63], [82, 79], [64, 85],
-    [90, 93], [74, 11], [92, 35],
-  ];
+function FaceGlow() {
+  const sparks = useMemo(
+    () =>
+      Array.from({ length: 28 }, (_, i) => ({
+        left: 58 + ((i * 17) % 36),
+        top: 10 + ((i * 13) % 46),
+        size: 2 + (i % 4),
+        delay: (i % 9) * 0.22,
+      })),
+    [],
+  );
+
   return (
-    <div className={`pointer-events-none ${className}`} aria-hidden="true">
-      {nodes.map(([x, y], i) => (
+    <div className="pointer-events-none absolute inset-0">
+      <motion.div
+        className="absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(ellipse 64% 82% at 80% 40%, rgba(4,16,40,0.72) 0%, rgba(11,31,58,0.42) 44%, transparent 78%)',
+          mixBlendMode: 'multiply',
+        }}
+        animate={{ opacity: [0.85, 1, 0.9, 0.85] }}
+        transition={{ duration: 4.8, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <motion.div
+        className="absolute right-[4%] top-[8%] h-[52%] w-[48%]"
+        style={{
+          background:
+            'radial-gradient(ellipse at 58% 40%, rgba(37,99,168,0.28) 0%, rgba(56,189,248,0.1) 38%, transparent 70%)',
+          mixBlendMode: 'screen',
+        }}
+        animate={{ x: [0, 8, -4, 0], y: [0, -6, 3, 0], opacity: [0.55, 0.9, 0.65, 0.55] }}
+        transition={{ duration: 5.4, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <motion.div
+        className="absolute right-[-4%] top-[6%] h-[58%] w-[52%] rounded-full"
+        style={{
+          background: 'radial-gradient(ellipse at 56% 38%, rgba(56, 189, 248, 0.22) 0%, transparent 68%)',
+          filter: 'blur(16px)',
+        }}
+        animate={{ opacity: [0.35, 0.75, 0.4, 0.35], scale: [1, 1.08, 1.02, 1] }}
+        transition={{ duration: 3.6, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      {sparks.map((s, i) => (
         <motion.span
           key={i}
-          className="absolute h-1.5 w-1.5 rounded-full bg-sky-300 shadow-[0_0_10px_rgba(56,189,248,0.95)]"
-          style={{ left: `${x}%`, top: `${y}%` }}
-          animate={{ opacity: [0.15, 1, 0.15], scale: [0.8, 1.6, 0.8] }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut', delay: i * 0.15 }}
+          className="absolute rounded-full bg-sky-100"
+          style={{
+            left: `${s.left}%`,
+            top: `${s.top}%`,
+            width: s.size,
+            height: s.size,
+            boxShadow: '0 0 12px 3px rgba(125,211,252,0.85), 0 0 22px 6px rgba(37,99,168,0.45)',
+          }}
+          animate={{
+            opacity: [0.15, 1, 0.15],
+            scale: [0.5, 1.35, 0.5],
+            x: [0, i % 2 === 0 ? 6 : -5, 0],
+            y: [0, i % 3 === 0 ? -8 : 5, 0],
+          }}
+          transition={{ duration: 1.6 + (i % 5) * 0.22, repeat: Infinity, delay: s.delay, ease: 'easeInOut' }}
         />
       ))}
     </div>
@@ -42,156 +91,90 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
   const { time, day } = useLiveClock();
 
   return (
-    <section className="relative flex h-full min-h-full flex-col overflow-hidden px-5 pb-6 pt-4">
-      <motion.img
-        src={ART}
-        alt=""
-        className="absolute inset-0 h-full w-full object-cover object-[right_bottom]"
-        draggable={false}
-        animate={{ scale: [1, 1.02, 1] }}
-        transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-      />
-
-      <FaceMeshPulse className="absolute right-0 top-[4%] z-[1] h-[46%] w-[42%]" />
+    <section className="relative flex h-full min-h-full flex-col overflow-hidden bg-[linear-gradient(180deg,#f7fbff_0%,#e8f2fc_55%,#dceaf8_100%)] px-5 pb-5 pt-4">
       <motion.div
-        className="pointer-events-none absolute right-0 top-[6%] z-[1] h-[52%] w-[40%] rounded-full bg-gradient-to-b from-transparent via-sky-400/25 to-transparent"
-        animate={{ y: ['-6%', '12%', '-6%'], opacity: [0.12, 0.45, 0.12] }}
-        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-      />
-      <motion.div
-        className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-r from-transparent via-sky-200/10 to-transparent"
-        animate={{ x: ['-120%', '120%'] }}
-        transition={{ duration: 4.5, repeat: Infinity, repeatDelay: 5, ease: 'easeInOut' }}
-        aria-hidden
-      />
+        className="pointer-events-none absolute inset-0 origin-[78%_42%]"
+        animate={{ y: [0, -5, 2, 0], x: [0, 2, -1.5, 0], scale: [1, 1.012, 1.005, 1] }}
+        transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' }}
+      >
+        <img
+          src={ART}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover object-[74%_36%] contrast-[1.18] saturate-[1.2] drop-shadow-[0_0_28px_rgba(11,31,58,0.35)]"
+          style={{
+            WebkitMaskImage: 'linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.2) 34%, #000 58%, #000 100%)',
+            maskImage: 'linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.2) 34%, #000 58%, #000 100%)',
+          }}
+          draggable={false}
+        />
+        <FaceGlow />
+      </motion.div>
 
-      {/* Government + AI content panel */}
       <div className="relative z-[3] flex min-h-0 flex-1 flex-col">
-        {/* Official header strip */}
-        <motion.header
-          className="mb-3 shrink-0 border-b-2 border-[#C9A227]/80 pb-3"
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex min-w-0 items-center gap-2.5">
-              <DostPtriLogo className="h-[52px] w-[52px] shrink-0 drop-shadow-sm" />
-              <div className="min-w-0">
-                <p className="text-[7.5px] font-bold uppercase tracking-[0.12em] text-navy/80">
-                  Republic of the Philippines
-                </p>
-                <p className="text-[8.5px] font-bold leading-snug text-navy">
+        <header className="shrink-0">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <DostPtriLogo className="h-[52px] w-[52px] shrink-0" />
+              <div className="min-w-0 text-[#0B1F3A]">
+                <p className="text-[8px] font-semibold uppercase tracking-[0.16em] text-[#0B1F3A]/70">
                   Department of Science and Technology
                 </p>
+                <h1 className="mt-0.5 text-[14px] font-extrabold uppercase leading-[1.15] tracking-wide">
+                  Philippine Textile Research Institute
+                </h1>
+                <p className="mt-1 text-[11px] italic text-[#1B4F8A]/80">Innovating Textiles. Empowering Filipinos.</p>
               </div>
             </div>
-            <div className="shrink-0 rounded-lg border border-white/40 bg-white/30 px-2 py-1 text-right backdrop-blur-[1px]">
-              <div className="text-[13px] font-extrabold tabular-nums leading-none text-navy">{time}</div>
-              <div className="mt-0.5 text-[9px] font-semibold text-navy/75">{day}</div>
+            <div className="shrink-0 pt-0.5 text-right text-[#0B1F3A]">
+              <div className="text-[13px] font-extrabold tabular-nums leading-none">{time}</div>
+              <div className="mt-0.5 text-[9px] font-semibold text-[#0B1F3A]/65">{day}</div>
             </div>
           </div>
-        </motion.header>
+        </header>
 
-        <div className="relative max-w-[58%] flex-1 p-3.5 pl-0">
-          <motion.div
-            className="relative"
-            initial={{ opacity: 0, x: -14 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <div className="mb-1 flex items-center gap-1.5">
-              <span className="inline-flex items-center gap-1 rounded-full border border-accent/40 bg-transparent px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-wider text-accent">
-                <Sparkles className="h-2.5 w-2.5" />
-                AI Powered
-              </span>
-            </div>
-
-            <h1 className="font-['Libre_Baskerville'] text-[1.05rem] font-bold uppercase leading-[1.12] tracking-wide text-navy">
-              Philippine Textile
-              <br />
-              Research Institute
-            </h1>
-            <div className="mt-2 flex items-center gap-2">
-              <div className="h-[3px] w-10 rounded-full bg-[#C9A227]" />
-              <div className="h-px flex-1 max-w-[140px] bg-gradient-to-r from-[#C9A227]/60 to-transparent" />
-            </div>
-          </motion.div>
-
-          <motion.h2
-            className="relative mt-4 font-extrabold uppercase tracking-tight"
-            initial={{ opacity: 0, x: -14 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.08 }}
-          >
-            <span className="block text-[1.4rem] leading-none">
-              <motion.span
-                className="bg-gradient-to-r from-accent via-sky-400 to-accent bg-clip-text text-transparent"
-                animate={{ opacity: [0.85, 1, 0.85] }}
-                transition={{ duration: 2.2, repeat: Infinity }}
-              >
-                AI
-              </motion.span>{' '}
-              <span className="text-navy">Color Analysis</span>
-            </span>
-          </motion.h2>
-
-          <motion.p
-            className="relative mt-2.5 text-[0.92rem] font-semibold leading-snug text-navy"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-          >
-            Smart Colors. Perfect Style.
+        <motion.div className="mt-11 max-w-[58%]" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}>
+          <h2 className="text-[1.72rem] font-extrabold uppercase leading-[1.05] tracking-tight text-[#0B1F3A]">
+            AI Color &amp;
             <br />
-            Made for You.
-          </motion.p>
+            Textile
+            <br />
+            Experience
+          </h2>
+          <p className="mt-3 text-[0.95rem] font-medium leading-snug text-[#3A5A80]">
+            Discover the colors and textiles that truly suit you — powered by artificial intelligence.
+          </p>
+        </motion.div>
 
-          <ul className="relative mt-5 max-w-full space-y-3">
-            {FEATURE_BULLETS.map((item, index) => {
-              const Icon = ICONS[item.id];
-              return (
-                <motion.li
-                  key={item.id}
-                  className="flex items-center gap-2.5 bg-transparent py-0.5"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.22 + index * 0.08 }}
-                >
-                  <motion.span
-                    className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-navy to-[#1E4D8C] text-white shadow-md"
-                    animate={{ scale: [1, 1.06, 1] }}
-                    transition={{ duration: 2.4, repeat: Infinity, delay: index * 0.35 }}
-                  >
-                    <Icon className="h-3.5 w-3.5" strokeWidth={2.2} />
-                  </motion.span>
-                  <strong className="text-[10.5px] font-extrabold uppercase leading-tight tracking-wide text-navy">
-                    {item.title}
-                  </strong>
-                </motion.li>
-              );
-            })}
-          </ul>
+        <div className="mt-9 grid w-[17.25rem] grid-cols-3 gap-x-3 gap-y-3.5 bg-transparent">
+          {HOME_STEPS.map((item, index) => (
+            <motion.div
+              key={item.id}
+              className="flex w-[5.1rem] flex-col items-center gap-1.5 bg-transparent text-center"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.12 + index * 0.05 }}
+            >
+              <span className="grid h-[3.85rem] w-[3.85rem] place-items-center rounded-full border border-[#C9A227]/70 bg-[#0B1F3A] text-white shadow-[0_8px_16px_rgba(11,31,58,0.22)]">
+                <item.Icon className="h-[26px] w-[26px]" strokeWidth={1.7} />
+              </span>
+              <strong className="text-[7.5px] font-extrabold uppercase leading-[1.15] tracking-wide text-[#0B1F3A]">
+                {item.title}
+              </strong>
+            </motion.div>
+          ))}
         </div>
 
-        <div className="relative mt-3 max-w-[58%] shrink-0 pb-[34%]">
-          <motion.button
-            type="button"
-            onClick={onStart}
-            className="relative flex min-h-[56px] w-full items-center overflow-hidden rounded-2xl bg-gradient-to-r from-navy via-[#16407c] to-navy px-5 text-[1rem] font-extrabold tracking-wide text-white shadow-[0_14px_32px_rgba(11,31,58,0.38)]"
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.45 }}
-            whileTap={{ scale: 0.97 }}
-          >
-            <motion.span
-              className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent"
-              animate={{ x: ['-100%', '100%'] }}
-              transition={{ duration: 2.8, repeat: Infinity, repeatDelay: 3 }}
-            />
-            <span className="relative">TOUCH TO START</span>
-            <TouchPulseCue className="absolute -right-2 top-1/2 -translate-y-1/2" />
-          </motion.button>
-        </div>
+        <motion.button
+          type="button"
+          onClick={onStart}
+          className="absolute bottom-6 left-1/2 z-[4] flex h-[56px] w-[82%] max-w-[400px] -translate-x-1/2 items-center justify-between overflow-visible rounded-full border-[1.5px] border-[#C9A227] bg-[#0B1F3A] pl-7 pr-3 text-[1rem] font-extrabold tracking-[0.08em] text-white shadow-[0_12px_28px_rgba(11,31,58,0.35)]"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          whileTap={{ scale: 0.97 }}
+        >
+          <span>TOUCH TO START</span>
+          <TouchPulseCue className="-mr-0.5" />
+        </motion.button>
       </div>
     </section>
   );

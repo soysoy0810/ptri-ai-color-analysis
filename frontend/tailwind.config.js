@@ -13,6 +13,7 @@ export default {
           DEFAULT: '#2F80ED',
           soft: '#E8F1FF',
           mid: '#93C5FD',
+          glow: '#67E8F9',
         },
         muted: '#627D98',
         line: '#D9E2EC',
@@ -28,6 +29,8 @@ export default {
       },
       boxShadow: {
         kiosk: '0 18px 40px rgba(11, 31, 58, 0.12)',
+        ai: '0 0 0 1px rgba(103, 232, 249, 0.28), 0 10px 28px rgba(47, 128, 237, 0.28)',
+        'ai-soft': '0 0 24px rgba(125, 211, 252, 0.35)',
       },
     },
   },

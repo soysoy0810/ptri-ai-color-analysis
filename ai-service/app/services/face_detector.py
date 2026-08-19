@@ -9,8 +9,9 @@ Replace `get_face_detector()` return value to swap models later.
 
 from __future__ import annotations
 
+import threading
 from dataclasses import dataclass
-from typing import Optional, Protocol, Tuple
+from typing import Optional, Protocol
 
 from PIL import Image
 
@@ -57,12 +58,16 @@ class MediaPipeFaceDetector:
             model_selection=1,
             min_detection_confidence=0.5,
         )
+        # MediaPipe solution graphs are stateful and not thread-safe, and
+        # FastAPI serves sync endpoints from a threadpool.
+        self._lock = threading.Lock()
 
     def detect(self, image: Image.Image) -> Optional[FaceRegion]:
         import numpy as np
 
         rgb = np.array(image.convert("RGB"))
-        result = self._detector.process(rgb)
+        with self._lock:
+            result = self._detector.process(rgb)
         if not result.detections:
             return None
 

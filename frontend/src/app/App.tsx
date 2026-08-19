@@ -6,23 +6,28 @@ import { api } from '../shared/api/client';
 import { setLiveDesigns } from '../shared/lib/catalogStore';
 import {
   analyzeSkinTone,
-  averageImageColor,
+  profileFromServer,
   rankPaletteFromSample,
+  skinToneCandidatesFromRegions,
   setActivePalette,
   type SkinProfile,
+  type SkinToneCandidate,
 } from '../shared/lib/colorEngine';
-import { FABRICS } from '../data/catalog';
-import { getDesignById } from '../shared/lib/catalogStore';
+import { TEXTILES, type TextileId } from '../data/textiles';
 import type { FaceRegion, LightingInfo, PaletteColor, SelectionMode, StepId } from '../shared/lib/types';
+import { preloadFaceLandmarker, type NormPoint } from '../shared/hooks/useFaceLandmarker';
 import { WelcomeScreen } from '../features/welcome/WelcomeScreen';
 import { ProfileScreen } from '../features/profile/ProfileScreen';
 import { AutoScanScreen } from '../features/camera/AutoScanScreen';
+import { SkinToneScreen } from '../features/skintone/SkinToneScreen';
 import { AnalysisScreen } from '../features/analysis/AnalysisScreen';
 import { Top20Screen } from '../features/colors/Top20Screen';
 import { ChooseTopScreen } from '../features/colors/ChooseTopScreen';
+import { ColorPreviewScreen } from '../features/colorpreview/ColorPreviewScreen';
 import { CategoryScreen } from '../features/category/CategoryScreen';
 import { DesignScreen } from '../features/design/DesignScreen';
 import { FabricScreen } from '../features/fabric/FabricScreen';
+import { AccessoriesScreen } from '../features/accessories/AccessoriesScreen';
 import { BackgroundScreen } from '../features/background/BackgroundScreen';
 import { PreviewScreen } from '../features/preview/PreviewScreen';
 import { RecommendationScreen } from '../features/recommendation/RecommendationScreen';
@@ -36,9 +41,17 @@ export default function App() {
     useKioskSession();
   const [toast, setToast] = useState('');
   const [skinProfile, setSkinProfile] = useState<SkinProfile | null>(null);
+  const [skinCandidates, setSkinCandidates] = useState<{ swatches: SkinToneCandidate[]; matchIndex: number } | null>(
+    null,
+  );
+  const [analyzeError, setAnalyzeError] = useState<string | null>(null);
+  /** The AI-generated try-on image (person actually wearing the garment) */
+  const [tryOnImage, setTryOnImage] = useState<string | null>(null);
+  const [textileId, setTextileId] = useState<TextileId | null>(null);
 
   // Load the live palette managed in the admin panel; fall back to bundled JSON offline
   useEffect(() => {
+    preloadFaceLandmarker();
     api
       .getCatalog()
       .then((catalog) => {
@@ -52,10 +65,21 @@ export default function App() {
       });
   }, []);
 
-  // New visitor — drop the previous skin analysis
+  // New visitor — drop the previous analysis and generated imagery
   useEffect(() => {
-    if (state.step === 'welcome') setSkinProfile(null);
+    if (state.step === 'welcome') {
+      setSkinProfile(null);
+      setSkinCandidates(null);
+      setTryOnImage(null);
+      setTextileId(null);
+      setAnalyzeError(null);
+    }
   }, [state.step]);
+
+  // Changing clothing or textile regenerates on the same session scan.
+  useEffect(() => {
+    setTryOnImage(null);
+  }, [state.designId, state.fabricId, textileId]);
 
   // QA / board review: ?preview=results or ?preview=thanks (&name=Irene for thanks)
   useEffect(() => {
@@ -114,6 +138,7 @@ export default function App() {
         ageRange: state.profile.ageRange || 'Prefer not to say',
         gender: state.profile.gender || 'prefer_not',
         email: state.profile.email,
+        purpose: state.profile.purpose,
       });
       dispatch({ type: 'SET_SESSION', sessionId: res.session_id });
     } catch {
@@ -122,29 +147,50 @@ export default function App() {
     goTo('cameraGuide');
   }
 
-  function handleCapture(
+  async function handleCapture(
     dataUrl: string,
-    canvas: HTMLCanvasElement,
+    _canvas: HTMLCanvasElement,
     lighting: LightingInfo,
     faceBox: FaceRegion | null,
+    landmarks: NormPoint[] | null,
+    analysisFrames: string[] = [],
   ) {
     dispatch({ type: 'SET_LIGHTING', lighting });
-    dispatch({ type: 'SET_CAPTURE', dataUrl, faceBox });
-    // Read skin from the forehead + cheeks of the detected face, then rank
-    // the palette with undertone/depth color science
-    const sample = averageImageColor(canvas, faceBox);
-    setSkinProfile(analyzeSkinTone(sample));
-    const ranked = rankPaletteFromSample(sample);
-    dispatch({ type: 'SET_TOP20', top20: ranked });
-    goTo('analysis');
+    dispatch({
+      type: 'SET_CAPTURE',
+      dataUrl,
+      faceBox,
+      faceLandmarks: landmarks,
+      width: _canvas.width,
+      height: _canvas.height,
+    });
+    setAnalyzeError(null);
 
-    // Record the capture server-side; the local Lab/ITA ranking stays
-    // authoritative because it is computed from the detected face region
-    if (state.sessionId) {
-      api.analyze(state.sessionId, dataUrl).catch(() => {
-        /* offline-friendly */
-      });
+    // The AI service is the authoritative source: multi-frame Lab median,
+    // landmark skin patches, ITA depth + hue undertone. No client substitute.
+    try {
+      const res = await api.analyze(state.sessionId || '', dataUrl, analysisFrames);
+      if (!res.sample_rgb || !res.top20?.length) {
+        throw new Error('The analysis service returned no result.');
+      }
+      const profile = profileFromServer(res);
+      setSkinProfile(profile);
+      setSkinCandidates(
+        skinToneCandidatesFromRegions(res.skin_regions || {}, res.sample_rgb),
+      );
+      dispatch({ type: 'SET_TOP20', top20: res.top20 });
+      if (profile.message && (res.lighting?.status === 'too_dark' || res.lighting?.status === 'too_bright')) {
+        setAnalyzeError(profile.message);
+        return;
+      }
+      goTo('skinTone');
+    } catch (err) {
+      setAnalyzeError(err instanceof Error ? err.message : 'Unable to analyze your photo. Please try again.');
     }
+  }
+
+  function retryCapture() {
+    setAnalyzeError(null);
   }
 
   function applySelectionMode(mode: SelectionMode) {
@@ -171,39 +217,28 @@ export default function App() {
     dispatch({ type: 'SET_SELECTED_COLORS', colors: nextColors });
   }
 
-  async function finalizeSession() {
+  function finalizeSession() {
     const token = `R${Date.now().toString(36).toUpperCase()}`;
     dispatch({ type: 'SET_RESULT_TOKEN', token });
-    try {
-      if (state.sessionId) {
-        await api.completeSession(state.sessionId, {
-          selected_colors: state.selectedColors,
-          top20: state.top20,
-          selection_mode: state.selectionMode,
-          category_id: state.categoryId,
-          design_id: state.designId,
-          fabric_id: state.fabricId,
-          background_id: state.backgroundId,
-          result_token: token,
-        });
-      }
-    } catch {
-      /* offline-friendly */
-    }
     goTo('results');
+    if (!state.sessionId) return;
+    api
+      .completeSession(state.sessionId, {
+        selected_colors: state.selectedColors,
+        top20: state.top20,
+        selection_mode: state.selectionMode,
+        category_id: state.categoryId,
+        design_id: state.designId,
+        fabric_id: state.fabricId,
+        background_id: state.backgroundId,
+        result_token: token,
+      })
+      .catch(() => {
+        /* offline-friendly — the result is already on screen */
+      });
   }
 
-  async function handleHelp() {
-    dispatch({ type: 'STAFF_ALERT' });
-    showToast('Staff has been notified.');
-    try {
-      await api.callStaff(state.sessionId);
-    } catch {
-      /* local toast */
-    }
-  }
-
-  const hideChrome = state.step === 'welcome' || state.step === 'thanks';
+  const hideChrome = state.step === 'welcome';
   const limit = state.selectionMode === 'top5' ? 5 : 10;
   const chooseReady =
     state.selectionMode === 'custom'
@@ -228,12 +263,34 @@ export default function App() {
       footer = <NavButtons onBack={() => goTo('welcome')} hideNext />;
       break;
     case 'cameraGuide':
-      body = <AutoScanScreen onCapture={handleCapture} />;
+      body = (
+        <AutoScanScreen
+          onCapture={handleCapture}
+          errorMessage={analyzeError}
+          onRetry={retryCapture}
+        />
+      );
       footer = <NavButtons onBack={() => goTo('profile')} hideNext />;
+      break;
+    case 'skinTone':
+      body = (
+        <SkinToneScreen
+          captureDataUrl={state.captureDataUrl}
+          skinProfile={skinProfile}
+          candidates={skinCandidates}
+          onContinue={() => goTo('analysis')}
+          onSelectTone={(rgb) => {
+            setSkinProfile(analyzeSkinTone(rgb));
+            dispatch({ type: 'SET_TOP20', top20: rankPaletteFromSample(rgb) });
+          }}
+        />
+      );
       break;
     case 'analysis':
       body = (
         <AnalysisScreen
+          skinProfile={skinProfile}
+          top20={state.top20}
           onDone={() => {
             applySelectionMode('top5');
             goTo('top20');
@@ -245,16 +302,20 @@ export default function App() {
       body = (
         <Top20Screen
           colors={state.top20}
-          onSuggestTop5={() => {
-            applySelectionMode('top5');
-            goTo('chooseTop');
+          skinProfile={skinProfile}
+          onPickMode={(mode) => {
+            applySelectionMode(mode);
+            goTo('colorPreview');
           }}
         />
       );
       footer = (
         <NavButtons
           onBack={() => goTo('cameraGuide')}
-          onNext={() => goTo('chooseTop')}
+          onNext={() => {
+            applySelectionMode(state.selectionMode || 'top5');
+            goTo('colorPreview');
+          }}
           nextLabel="NEXT"
         />
       );
@@ -279,17 +340,32 @@ export default function App() {
         />
       );
       break;
+    case 'colorPreview':
+      body = (
+        <ColorPreviewScreen
+          captureDataUrl={state.captureDataUrl}
+          selectedColors={state.selectedColors}
+          top20={state.top20}
+        />
+      );
+      footer = <NavButtons onBack={back} onNext={next} nextLabel="CONTINUE" />;
+      break;
     case 'category':
       body = (
         <CategoryScreen
           selectedId={state.categoryId}
-          onSelect={(categoryId) => {
+          selectedDesignId={state.designId}
+          selectedAccessories={state.selectedAccessories}
+          gender={state.profile.gender}
+          onSelect={(categoryId) => dispatch({ type: 'SET_CATEGORY', categoryId })}
+          onSelectDesign={(designId, categoryId) => {
             dispatch({ type: 'SET_CATEGORY', categoryId });
-            goTo('design');
+            dispatch({ type: 'SET_DESIGN', designId });
           }}
+          onToggleAccessory={(accessory) => dispatch({ type: 'TOGGLE_ACCESSORY', accessory })}
         />
       );
-      footer = <NavButtons onBack={back} hideNext />;
+      footer = <NavButtons onBack={back} onNext={next} nextDisabled={!state.designId} nextLabel="CONTINUE" />;
       break;
     case 'design':
       body = (
@@ -307,10 +383,22 @@ export default function App() {
         <FabricScreen
           fabrics={state.fabricMatches}
           selectedId={state.fabricId}
+          selectedTextileId={textileId}
           onSelect={(fabricId) => dispatch({ type: 'SET_FABRIC', fabricId })}
+          onSelectTextile={setTextileId}
         />
       );
       footer = <NavButtons onBack={back} onNext={next} nextDisabled={!state.fabricId} />;
+      break;
+    case 'accessories':
+      body = (
+        <AccessoriesScreen
+          selectedAccessories={state.selectedAccessories}
+          gender={state.profile.gender}
+          onToggleAccessory={(accessory) => dispatch({ type: 'TOGGLE_ACCESSORY', accessory })}
+        />
+      );
+      footer = <NavButtons onBack={() => goTo('preview')} onNext={() => goTo('preview')} nextLabel="DONE" />;
       break;
     case 'background':
       body = (
@@ -321,22 +409,31 @@ export default function App() {
       );
       footer = <NavButtons onBack={back} onNext={next} />;
       break;
-    case 'preview':
+    case 'preview': {
+      const fabric = state.fabricMatches.find((f) => f.id === state.fabricId);
+      const textile = textileId ? TEXTILES.find((t) => t.id === textileId) : null;
+      const selectedColorHex = state.selectedColors[0]?.hex;
+      const tryOnPhoto = state.captureDataUrl;
       body = (
         <PreviewScreen
-          captureDataUrl={state.captureDataUrl}
-          faceBox={state.faceBox}
-          gender={state.profile.gender}
-          categoryId={state.categoryId}
+          captureDataUrl={tryOnPhoto}
           designId={state.designId}
+          fabricHex={selectedColorHex || textile?.hex || fabric?.hex || '#7FB9A8'}
+          fabricName={textile?.name || fabric?.name}
+          textileId={textileId}
           backgroundId={state.backgroundId}
-          fabricId={state.fabricId}
-          selectedColors={state.selectedColors}
           onBackgroundSelect={(backgroundId) => dispatch({ type: 'SET_BACKGROUND', backgroundId })}
+          lighting={state.portraitLighting}
+          onLightingChange={(nextLighting) =>
+            dispatch({ type: 'SET_PORTRAIT_LIGHTING', lighting: nextLighting })
+          }
+          onTryOnGenerated={setTryOnImage}
+          onTryOnFailed={() => setTryOnImage(null)}
         />
       );
-      footer = <NavButtons onBack={back} onNext={next} nextLabel="NEXT" />;
+      footer = <NavButtons onBack={back} onNext={finalizeSession} nextDisabled={!tryOnImage} nextLabel="CONTINUE" />;
       break;
+    }
     case 'recommendation':
       body = <RecommendationScreen summary={summary} skinProfile={skinProfile} />;
       footer = <NavButtons onBack={back} onNext={finalizeSession} nextLabel="GET YOUR RESULT" />;
@@ -346,19 +443,11 @@ export default function App() {
         <ResultsScreen
           email={state.profile.email}
           resultToken={state.resultToken}
-          captureDataUrl={state.captureDataUrl}
-          faceBox={state.faceBox}
-          gender={state.profile.gender}
-          designId={state.designId}
-          backgroundId={state.backgroundId}
-          fabricId={state.fabricId}
+          tryOnImage={tryOnImage}
           selectedColors={state.selectedColors}
-          fabricHex={
-            FABRICS.find((f) => f.id === state.fabricId)?.hex ||
-            state.selectedColors[0]?.hex ||
-            '#1E4D8C'
-          }
-          designName={getDesignById(state.designId)?.name}
+          selectedAccessories={state.selectedAccessories}
+          summary={summary}
+          onChangeStyle={() => goTo('category')}
           onEmailChange={(email) => dispatch({ type: 'SET_PROFILE', profile: { email } })}
           onSendEmail={async () => {
             if (!state.sessionId) throw new Error('Session unavailable offline.');
@@ -370,15 +459,21 @@ export default function App() {
       );
       footer = (
         <NavButtons
-          onBack={() => goTo('recommendation')}
+          onBack={() => goTo('preview')}
           onNext={() => goTo('thanks')}
-          nextLabel="DONE"
-          nextIcon="check"
+          nextLabel="CONTINUE"
         />
       );
       break;
     case 'thanks':
-      body = <ThanksScreen name={state.profile.fullName} onReset={reset} />;
+      body = (
+        <ThanksScreen
+          name={state.profile.fullName}
+          email={state.profile.email}
+          resultToken={state.resultToken}
+          onReset={reset}
+        />
+      );
       break;
     default:
       body = <WelcomeScreen onStart={startFromHome} />;
@@ -391,7 +486,6 @@ export default function App() {
       stepLabel={stepLabel}
       showHeader={!hideChrome}
       footer={footer}
-      onHelp={hideChrome ? null : handleHelp}
       toast={toast}
     >
       {body}

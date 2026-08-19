@@ -1,60 +1,59 @@
 import { useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
-import { QRCodeSVG } from 'qrcode.react';
-import { CheckCircle2, Mail, SendHorizonal } from 'lucide-react';
-import { resolveGarmentKey, resolveTryonUrl } from '../../shared/lib/catalogStore';
-import type { FaceRegion, PaletteColor } from '../../shared/lib/types';
-import { LookComposer } from '../../shared/ui/LookComposer';
+import { Download, SendHorizonal } from 'lucide-react';
+import { ACCESSORY_ITEMS, CATEGORIES } from '../../data/catalog';
+import { getDesignById } from '../../shared/lib/catalogStore';
+import type { PaletteColor, SessionSummary } from '../../shared/lib/types';
 
 interface ResultsScreenProps {
   email: string;
   resultToken: string | null;
-  captureDataUrl: string | null;
-  faceBox: FaceRegion | null;
-  gender: string;
-  designId: string | null;
-  backgroundId: string;
-  fabricId: string | null;
+  tryOnImage: string | null;
   selectedColors: PaletteColor[];
-  fabricHex: string;
-  designName?: string;
+  selectedAccessories: string[];
+  summary?: SessionSummary | null;
   onEmailChange: (email: string) => void;
   onSendEmail: () => Promise<void>;
   onSent?: () => void;
+  onChangeStyle?: () => void;
 }
 
 export function ResultsScreen({
   email,
   resultToken,
-  captureDataUrl,
-  faceBox,
-  gender,
-  designId,
-  backgroundId,
-  fabricHex,
-  designName,
+  tryOnImage,
+  selectedColors,
+  selectedAccessories,
+  summary,
   onEmailChange,
   onSendEmail,
   onSent,
+  onChangeStyle,
 }: ResultsScreenProps) {
   const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
-  const garmentKey = resolveGarmentKey(designId);
-  const tryonImageUrl = resolveTryonUrl(designId);
+  const top5 = selectedColors.slice(0, 5);
+  const design = summary?.designId ? getDesignById(summary.designId) : null;
+  const category = summary?.categoryId ? CATEGORIES.find((c) => c.id === summary.categoryId) : null;
+  const chosenAccessories = useMemo(
+    () => ACCESSORY_ITEMS.filter((a) => selectedAccessories.includes(a.id)),
+    [selectedAccessories],
+  );
+  const accessoryLabel = chosenAccessories.map((a) => a.name).join(', ') || 'None selected';
 
-  const resultUrl = useMemo(() => {
-    const base = window.location.origin;
-    return `${base}/ptri-AI-color-analysis/results/${resultToken || 'demo'}`;
-  }, [resultToken]);
+  function saveResult() {
+    if (!tryOnImage) return;
+    const a = document.createElement('a');
+    a.href = tryOnImage;
+    a.download = `ptri-result-${resultToken || 'look'}.jpg`;
+    a.click();
+  }
 
   async function handleEmail() {
     setSending(true);
     setError('');
     try {
       await onSendEmail();
-      setSent(true);
-      window.setTimeout(() => onSent?.(), 1400);
+      onSent?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to send email right now.');
     } finally {
@@ -63,88 +62,88 @@ export function ResultsScreen({
   }
 
   return (
-    <section className="-mx-5 -mt-4 flex min-h-0 flex-col">
-      {/* Full try-on — 4:5 portrait matches composed result image */}
-      <div className="relative mx-auto w-full shrink-0 overflow-hidden bg-slate-200 aspect-[4/5] max-h-[62vh]">
-        <LookComposer
-          fullBleed
-          fitContain
-          captureDataUrl={captureDataUrl}
-          faceBox={faceBox}
-          gender={gender}
-          garmentKey={garmentKey}
-          fabricHex={fabricHex}
-          backgroundId={backgroundId}
-          designName={designName}
-          tryonImageUrl={tryonImageUrl}
-        />
-      </div>
+    <section className="screen pb-4">
+      <span className="ai-chip mb-2">
+        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
+        Recommendation ready
+      </span>
+      <p className="mb-3 text-[0.98rem] font-semibold leading-relaxed text-navy">
+        Your personalized AI Color &amp; Textile Recommendation.
+      </p>
 
-      <div className="shrink-0 px-3 pb-6 pt-3">
-        <motion.h1
-          className="mb-3 text-center font-['Libre_Baskerville'] text-[1.05rem] font-bold uppercase tracking-wide text-[#0B1F3A]"
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          Get Your Results
-        </motion.h1>
-
-        <motion.div
-          className="overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-sm"
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-        >
-          <div className="h-1 bg-gradient-to-r from-[#C9A227] via-[#E8C547] to-[#C9A227]" />
-
-          <div className="flex flex-col gap-0 p-4">
-            <div className="flex flex-col items-center text-center">
-              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#0B1F3A] to-[#1E4D8C] shadow-md">
-                <Mail className="h-5 w-5 text-white" strokeWidth={1.8} />
-              </div>
-              <p className="mt-2 text-[11px] font-bold leading-snug text-[#0B1F3A]">Send to email</p>
-              <input
-                type="email"
-                className="mt-2 min-h-[44px] w-full rounded-xl border border-[#CBD5E1] bg-[#FAFAF8] px-3 text-[13px] outline-none focus:border-[#C9A227]"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => onEmailChange(e.target.value)}
-                autoComplete="email"
-              />
-              <motion.button
-                type="button"
-                className="btn mt-2 w-full bg-[#0B1F3A] py-2.5 text-[12px] font-extrabold uppercase text-white"
-                onClick={handleEmail}
-                disabled={sending || !email.trim()}
-                whileTap={{ scale: 0.97 }}
-              >
-                {sent ? (
-                  <>
-                    <CheckCircle2 className="h-3.5 w-3.5 text-[#E8C547]" /> Sent!
-                  </>
-                ) : (
-                  <>
-                    {sending ? 'Sending…' : 'Send Results'}{' '}
-                    <SendHorizonal className="h-3.5 w-3.5" />
-                  </>
-                )}
-              </motion.button>
-              {error ? (
-                <p className="mt-1.5 w-full text-left text-[10px] font-semibold text-red-700">{error}</p>
-              ) : null}
-            </div>
-
-            <div className="my-4 h-px w-full bg-[#E2E8F0]" />
-
-            <div className="flex flex-col items-center text-center">
-              <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#64748B]">or scan</p>
-              <p className="mt-1 mb-2 text-[12px] font-extrabold text-[#0B1F3A]">Scan QR Code</p>
-              <div className="rounded-xl border border-[#E2E8F0] bg-white p-2">
-                <QRCodeSVG value={resultUrl} size={120} level="M" />
-              </div>
-            </div>
+      <p className="mb-2 text-[11px] font-extrabold uppercase tracking-wide text-muted">Your Look</p>
+      <div className="mb-4 shrink-0 rounded-2xl border border-sky-100 bg-slate-900 shadow-sm">
+        {tryOnImage ? (
+          <img
+            src={tryOnImage}
+            alt="AI-generated try-on"
+            className="mx-auto block h-auto max-h-[min(58vh,560px)] w-full object-contain object-center"
+            draggable={false}
+          />
+        ) : (
+          <div className="grid min-h-[220px] place-items-center px-4 text-center text-[11px] font-semibold text-white/80">
+            Virtual try-on unavailable — no generated image. This screen will not show a clothing overlay.
           </div>
-        </motion.div>
+        )}
+        <p className="bg-white py-2 text-center text-[11px] font-extrabold uppercase text-navy">
+          {tryOnImage ? 'Generated try-on' : 'Virtual try-on could not be generated'}
+        </p>
       </div>
+
+      <p className="mb-2 text-[11px] font-extrabold uppercase tracking-wide text-muted">Your Top 5 Colors</p>
+      <div className="mb-4 flex gap-2">
+        {top5.map((c) => (
+          <span
+            key={c.id}
+            className="h-11 w-11 rounded-full border-2 border-white shadow-md ring-1 ring-black/10"
+            style={{ background: c.hex }}
+          />
+        ))}
+      </div>
+
+      <div className="mb-4 rounded-2xl border border-line bg-slate-50 p-4 text-sm">
+        <div className="mb-2 flex items-start justify-between gap-3">
+          <span className="shrink-0 text-muted">Best Style</span>
+          <strong className="text-right text-navy">{category?.label || design?.name || '—'}</strong>
+        </div>
+        <div className="mb-2 flex items-start justify-between gap-3">
+          <span className="shrink-0 text-muted">Best Colors</span>
+          <strong className="text-right text-navy">{top5.slice(0, 3).map((c) => c.name).join(', ') || '—'}</strong>
+        </div>
+        <div className="mb-2 flex items-start justify-between gap-3">
+          <span className="shrink-0 text-muted">Best Fabrics</span>
+          <strong className="text-right text-navy">{summary?.fabric?.name || '—'}</strong>
+        </div>
+        <div className="flex items-start justify-between gap-3">
+          <span className="shrink-0 text-muted">Best Accessories</span>
+          <strong className="break-words text-right text-navy">{accessoryLabel}</strong>
+        </div>
+      </div>
+
+      {onChangeStyle ? (
+        <button type="button" onClick={onChangeStyle} className="mb-3 text-center text-[11px] font-extrabold uppercase text-accent">
+          Change Style
+        </button>
+      ) : null}
+
+      <div className="grid grid-cols-2 gap-2">
+        <button type="button" className="btn border-2 border-navy bg-white text-navy" onClick={saveResult} disabled={!tryOnImage}>
+          <Download className="h-4 w-4" />
+          SAVE RESULT
+        </button>
+        <button type="button" className="btn btn-primary" onClick={handleEmail} disabled={sending || !email.trim()}>
+          {sending ? 'Sending…' : 'SEND RESULT'}
+          <SendHorizonal className="h-4 w-4" />
+        </button>
+      </div>
+      <input
+        type="email"
+        className="mt-2 min-h-[44px] w-full rounded-xl border border-line px-3 text-sm text-navy outline-none focus:border-navy"
+        placeholder="Email for SEND RESULT"
+        value={email}
+        onChange={(e) => onEmailChange(e.target.value)}
+      />
+      {error ? <p className="mt-2 text-[11px] font-semibold text-red-600">{error}</p> : null}
     </section>
   );
 }
